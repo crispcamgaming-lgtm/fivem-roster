@@ -1,0 +1,1582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FiveM Universal — Department Toolkit</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#07090f;--bg2:#0b0e17;--bg3:#0f1320;--surface:#111829;--surface2:#151e30;
+  --border:#1e2d4a;--border2:#2a3f66;
+  --accent:#3a7bd5;--accent-dim:#1a3a6e;
+  --gold:#c8a84b;--gold-dim:#6e5818;
+  --text:#ccd6f0;--text2:#7a90b8;--text3:#3d5280;
+  --red:#c84b4b;--red-dim:#5c1e1e;
+  --amber:#c8923a;--amber-dim:#5c3a10;
+  --green:#4bc87a;--green-dim:#1e5c36;
+  --blue:#4b8ac8;--blue-dim:#1e3a5c;
+  --mono:'Share Tech Mono',monospace;
+  --head:'Bebas Neue',sans-serif;
+  --body:'Barlow',sans-serif;
+  --cond:'Barlow Condensed',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--body);min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(58,123,213,.03)1px,transparent 1px),linear-gradient(90deg,rgba(58,123,213,.03)1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0;}
+body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.07)2px,rgba(0,0,0,.07)4px);pointer-events:none;z-index:0;}
+.wrap{position:relative;z-index:1;}
+
+/* ─── LOGIN ─── */
+.login-overlay{position:fixed;inset:0;background:radial-gradient(ellipse at center,#0b0f1a 0%,#07090f 100%);z-index:500;display:flex;align-items:center;justify-content:center;}
+.login-overlay.hidden{display:none;}
+.login-box{background:var(--bg2);border:1px solid var(--border2);padding:3rem 2.5rem;width:440px;max-width:96vw;text-align:center;box-shadow:0 0 80px rgba(58,123,213,.12);}
+.login-logo-img{width:130px;height:130px;object-fit:contain;filter:drop-shadow(0 0 28px rgba(58,123,213,.55));display:block;margin:0 auto .75rem;}
+.login-logo-fallback{font-family:var(--head);font-size:68px;letter-spacing:4px;color:var(--accent);text-shadow:0 0 40px rgba(58,123,213,.6);line-height:1;margin-bottom:.5rem;}
+.login-title{font-family:var(--head);font-size:24px;letter-spacing:7px;color:var(--accent);margin-bottom:3px;}
+.login-sub{font-family:var(--mono);font-size:9px;letter-spacing:4px;color:var(--text3);text-transform:uppercase;margin-bottom:1.75rem;}
+.login-hr{width:50px;height:1px;background:linear-gradient(90deg,transparent,var(--border2),transparent);margin:0 auto 1.75rem;}
+.login-input{display:block;width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:12px;padding:11px 14px;outline:none;letter-spacing:1px;margin-bottom:10px;transition:border-color .2s;}
+.login-input:focus{border-color:var(--accent-dim);}
+.login-input::placeholder{color:var(--text3);}
+.login-btn{width:100%;background:var(--accent-dim);border:1px solid var(--accent);color:var(--accent);font-family:var(--mono);font-size:11px;letter-spacing:3px;text-transform:uppercase;padding:13px;cursor:pointer;transition:all .2s;margin-top:.5rem;}
+.login-btn:hover{background:var(--accent);color:#07090f;}
+.login-err{font-family:var(--mono);font-size:10px;color:var(--red);letter-spacing:1px;margin-top:10px;display:none;padding:8px 10px;border:1px solid var(--red-dim);background:rgba(200,75,75,.05);}
+.login-hint{font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:1px;margin-top:1.5rem;line-height:2.2;}
+.login-hint span{color:var(--text2);}
+
+/* ─── TOPBAR ─── */
+.topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 1.75rem;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:50;}
+.tb-left{display:flex;align-items:center;gap:.9rem;}
+.tb-logo-img{width:36px;height:36px;object-fit:contain;filter:drop-shadow(0 0 8px rgba(58,123,213,.5));}
+.tb-title{font-family:var(--head);font-size:21px;letter-spacing:3px;color:var(--accent);}
+.tb-tag{font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:2px;border:1px solid var(--border);padding:2px 8px;text-transform:uppercase;}
+.tb-right{display:flex;align-items:center;gap:.55rem;flex-wrap:wrap;}
+.tb-clock{font-family:var(--mono);font-size:11px;color:var(--text2);letter-spacing:1px;}
+.tb-user{font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:1px;padding:3px 10px;border:1px solid var(--border);}
+.tb-role{font-family:var(--mono);font-size:9px;letter-spacing:1px;padding:3px 8px;border:1px solid;text-transform:uppercase;}
+.role-a{color:#ff7043;border-color:#5c2810;background:rgba(255,112,67,.07);}
+.role-h{color:var(--gold);border-color:var(--gold-dim);background:rgba(200,168,75,.07);}
+.role-m{color:var(--accent);border-color:var(--accent-dim);background:rgba(58,123,213,.07);}
+.tb-btn{font-family:var(--mono);font-size:10px;letter-spacing:1px;text-transform:uppercase;background:transparent;border:1px solid;padding:5px 12px;cursor:pointer;transition:all .2s;}
+.btn-adm{border-color:#5c2810;color:#ff7043;}.btn-adm:hover{background:#5c2810;}
+.btn-hcp{border-color:var(--gold-dim);color:var(--gold);}.btn-hcp:hover{background:var(--gold-dim);}
+.btn-req{border-color:var(--accent-dim);color:var(--accent);}.btn-req:hover{background:var(--accent-dim);}
+.btn-out{border-color:var(--red-dim);color:var(--red);}.btn-out:hover{background:var(--red-dim);}
+
+/* ─── NAV TABS ─── */
+.navtabs{background:var(--bg3);border-bottom:1px solid var(--border);display:flex;padding:0 1.75rem;gap:0;}
+.ntab{font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;background:transparent;border:none;border-bottom:2px solid transparent;color:var(--text3);padding:10px 18px;cursor:pointer;transition:all .15s;margin-bottom:-1px;}
+.ntab:hover{color:var(--text2);}
+.ntab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.ntab.tloa{color:var(--blue);}.ntab.tloa.active{color:var(--blue);border-bottom-color:var(--blue);}
+.ntab.tmov{color:var(--amber);}.ntab.tmov.active{color:var(--amber);border-bottom-color:var(--amber);}
+
+/* ─── LAYOUT ─── */
+.layout{display:grid;grid-template-columns:255px 1fr;min-height:calc(100vh - 106px);}
+
+/* ─── SIDEBAR ─── */
+.sidebar{background:var(--bg2);border-right:1px solid var(--border);padding:1.25rem 0;position:sticky;top:58px;height:calc(100vh - 58px);overflow-y:auto;}
+.sb-label{font-family:var(--mono);font-size:9px;letter-spacing:3px;color:var(--text3);text-transform:uppercase;padding:0 1rem .6rem;border-bottom:1px solid var(--border);margin-bottom:.75rem;display:block;}
+.sb-depts{padding:0 .75rem;}
+.dept-btn{width:100%;text-align:left;background:transparent;border:none;padding:.6rem .75rem;cursor:pointer;display:flex;align-items:center;gap:9px;color:var(--text2);font-family:var(--cond);font-size:14px;font-weight:600;letter-spacing:1px;text-transform:uppercase;transition:all .15s;border-left:2px solid transparent;margin-bottom:2px;}
+.dept-btn:hover{color:var(--text);background:var(--surface);}
+.dept-btn.active{color:var(--accent);border-left-color:var(--accent);background:rgba(58,123,213,.06);}
+.dept-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.dept-count{margin-left:auto;font-family:var(--mono);font-size:10px;background:var(--surface2);color:var(--text3);padding:1px 6px;}
+.dept-btn.active .dept-count{background:var(--accent-dim);color:var(--accent);}
+.sb-locked{margin:.75rem;padding:.9rem;border:1px dashed var(--border);font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:1px;text-align:center;line-height:2;}
+.sb-stats{padding:1rem 1.25rem;border-top:1px solid var(--border);margin-top:auto;}
+.sstat{display:flex;justify-content:space-between;align-items:center;padding:3px 0;font-family:var(--mono);font-size:10px;color:var(--text3);}
+.sstat-v{font-size:12px;color:var(--accent);}
+
+/* ─── MAIN ─── */
+.main{padding:2rem;}
+.page{display:none;}
+.page.active{display:block;}
+
+/* ROSTER */
+.dept-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.75rem;padding-bottom:1.5rem;border-bottom:1px solid var(--border);}
+.dept-hdr-left{}
+.dept-name{font-family:var(--head);font-size:48px;letter-spacing:3px;line-height:1;}
+.dept-sub{font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:3px;margin-top:4px;}
+.dept-nums{display:flex;gap:1.5rem;}
+.dnum{text-align:right;}
+.dnum-v{font-family:var(--head);font-size:32px;letter-spacing:2px;line-height:1;}
+.dnum-l{font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--text3);text-transform:uppercase;}
+.filter-row{display:flex;gap:.75rem;margin-bottom:1.5rem;flex-wrap:wrap;align-items:center;}
+.f-input{background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:11px;padding:7px 12px;outline:none;letter-spacing:1px;flex:1;min-width:180px;transition:border-color .2s;}
+.f-input:focus{border-color:var(--accent-dim);}
+.f-input::placeholder{color:var(--text3);}
+.f-sel{background:var(--surface);border:1px solid var(--border);color:var(--text2);font-family:var(--mono);font-size:11px;padding:7px 28px 7px 10px;outline:none;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%233d5280'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;background-color:var(--surface);}
+.f-count{font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:1px;white-space:nowrap;}
+.rank-sec{margin-bottom:1.75rem;}
+.rank-hdr{display:flex;align-items:center;gap:1rem;padding:.5rem .75rem;background:var(--surface);border-left:3px solid var(--gold);cursor:pointer;user-select:none;}
+.rank-hdr.col{border-left-color:var(--border2);}
+.rank-hdr-name{font-family:var(--cond);font-size:13px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--gold);}
+.rank-hdr.col .rank-hdr-name{color:var(--text3);}
+.rank-hdr-ct{font-family:var(--mono);font-size:10px;color:var(--gold-dim);background:rgba(200,168,75,.07);padding:1px 8px;border:1px solid var(--gold-dim);}
+.rank-hdr.col .rank-hdr-ct{color:var(--text3);background:transparent;border-color:var(--border);}
+.rank-chev{margin-left:auto;font-size:10px;color:var(--text3);transition:transform .2s;}
+.rank-hdr.col .rank-chev{transform:rotate(-90deg);}
+.collapsible{overflow:hidden;transition:max-height .3s ease;}
+.collapsible.col{max-height:0!important;}
+.rtable{width:100%;border-collapse:collapse;font-size:13px;}
+.rtable thead th{font-family:var(--mono);font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);text-align:left;padding:6px 12px;border-bottom:1px solid var(--border);background:var(--bg2);font-weight:400;}
+.rtable tbody tr{border-bottom:1px solid rgba(30,45,74,.5);transition:background .1s;animation:fadeR .3s ease both;}
+.rtable tbody tr:hover{background:rgba(58,123,213,.04);}
+.rtable td{padding:9px 12px;vertical-align:middle;}
+@keyframes fadeR{from{opacity:0;transform:translateX(-6px);}to{opacity:1;transform:none;}}
+.mem-name{font-family:var(--cond);font-weight:700;font-size:14px;letter-spacing:1px;}
+.mem-id{font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:1px;}
+.brank{font-family:var(--cond);font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--gold);background:rgba(200,168,75,.07);border:1px solid var(--gold-dim);padding:2px 8px;white-space:nowrap;}
+.bstatus{font-family:var(--mono);font-size:9px;letter-spacing:1px;text-transform:uppercase;padding:2px 8px;border:1px solid;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;}
+.bstatus::before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0;}
+.bs-active{color:var(--green);border-color:var(--green-dim);background:rgba(75,200,122,.06);}
+.bs-needs{color:var(--amber);border-color:var(--amber-dim);background:rgba(200,146,58,.06);}
+.bs-inactive{color:var(--text3);border-color:var(--border);}
+.bs-loa{color:var(--blue);border-color:var(--blue-dim);background:rgba(75,138,200,.06);}
+.empty{text-align:center;padding:4rem 2rem;font-family:var(--mono);font-size:11px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;border:1px dashed var(--border);}
+.inline-sel{background:var(--surface2);border:1px solid var(--border);color:var(--text2);font-family:var(--mono);font-size:9px;padding:3px 22px 3px 6px;outline:none;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%233d5280'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 6px center;background-color:var(--surface2);}
+
+/* FORMS */
+.form-hdr{margin-bottom:2rem;padding-bottom:1.5rem;border-bottom:1px solid var(--border);}
+.form-title{font-family:var(--head);font-size:44px;letter-spacing:4px;line-height:1;}
+.form-sub{font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:3px;margin-top:4px;}
+.fcard{background:var(--bg2);border:1px solid var(--border);padding:2rem;margin-bottom:2rem;}
+.fcard-title{font-family:var(--cond);font-size:15px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--text2);margin-bottom:1.5rem;padding-bottom:.75rem;border-bottom:1px solid var(--border);}
+.fg{margin-bottom:1rem;}
+.fl{font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--text3);text-transform:uppercase;display:block;margin-bottom:5px;}
+.fi{width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:12px;padding:9px 12px;outline:none;letter-spacing:1px;transition:border-color .2s;}
+.fi:focus{border-color:var(--accent-dim);}
+.fi::placeholder{color:var(--text3);}
+.fs{width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:12px;padding:9px 28px 9px 12px;outline:none;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%233d5280'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;background-color:var(--surface);}
+.fta{width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:12px;padding:9px 12px;outline:none;letter-spacing:1px;resize:vertical;min-height:80px;transition:border-color .2s;}
+.fta:focus{border-color:var(--accent-dim);}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+.frow3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;}
+.fbtn{font-family:var(--mono);font-size:11px;letter-spacing:2px;text-transform:uppercase;background:var(--accent-dim);border:1px solid var(--accent);color:var(--accent);padding:11px 24px;cursor:pointer;transition:all .2s;margin-top:.25rem;}
+.fbtn:hover{background:var(--accent);color:#07090f;}
+.fbtn.amber{background:var(--amber-dim);border-color:var(--amber);color:var(--amber);}
+.fbtn.amber:hover{background:var(--amber);color:#07090f;}
+.fbtn.gold{background:var(--gold-dim);border-color:var(--gold);color:var(--gold);}
+.fbtn.gold:hover{background:var(--gold);color:#07090f;}
+.fbtn.red{background:var(--red-dim);border-color:var(--red);color:var(--red);}
+.fbtn.red:hover{background:var(--red);color:#fff;}
+.fmsg{font-family:var(--mono);font-size:11px;letter-spacing:1px;margin-top:.75rem;padding:.75rem 1rem;border:1px solid;display:none;}
+.fmsg.ok{color:var(--green);border-color:var(--green-dim);background:rgba(75,200,122,.05);}
+.fmsg.err{color:var(--red);border-color:var(--red-dim);background:rgba(200,75,75,.05);}
+
+/* REQUEST CARDS */
+.req-grid{display:grid;gap:.75rem;}
+.req-card{background:var(--surface);border:1px solid var(--border);padding:1rem 1.25rem;display:flex;gap:1rem;align-items:flex-start;animation:fadeR .25s ease;}
+.req-card-body{flex:1;}
+.req-card-hdr{display:flex;align-items:center;gap:.6rem;margin-bottom:.5rem;flex-wrap:wrap;}
+.rtag{font-family:var(--mono);font-size:9px;letter-spacing:1px;text-transform:uppercase;padding:2px 7px;border:1px solid;}
+.rt-loa{color:var(--blue);border-color:var(--blue-dim);background:rgba(75,138,200,.07);}
+.rt-mov{color:var(--amber);border-color:var(--amber-dim);background:rgba(200,146,58,.07);}
+.rt-pend{color:var(--amber);border-color:var(--amber-dim);background:rgba(200,146,58,.07);}
+.rt-appr{color:var(--green);border-color:var(--green-dim);background:rgba(75,200,122,.07);}
+.rt-deni{color:var(--red);border-color:var(--red-dim);background:rgba(200,75,75,.07);}
+.req-name{font-family:var(--cond);font-size:15px;font-weight:700;letter-spacing:1px;color:var(--text);}
+.req-meta{font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:.5px;line-height:1.9;margin-top:3px;}
+.req-acts{display:flex;gap:5px;flex-direction:column;align-items:flex-end;flex-shrink:0;}
+.btn-appr{font-family:var(--mono);font-size:9px;letter-spacing:1px;background:var(--green-dim);border:1px solid var(--green);color:var(--green);padding:4px 10px;cursor:pointer;transition:all .15s;text-transform:uppercase;white-space:nowrap;}
+.btn-appr:hover{background:var(--green);color:#07090f;}
+.btn-deny{font-family:var(--mono);font-size:9px;letter-spacing:1px;background:transparent;border:1px solid var(--red-dim);color:var(--red);padding:4px 10px;cursor:pointer;transition:all .15s;text-transform:uppercase;white-space:nowrap;}
+.btn-deny:hover{background:var(--red-dim);}
+.btn-del{font-family:var(--mono);font-size:9px;letter-spacing:1px;background:transparent;border:1px solid var(--border2);color:var(--text3);padding:3px 8px;cursor:pointer;transition:all .15s;text-transform:uppercase;}
+.btn-del:hover{border-color:var(--red-dim);color:var(--red);}
+.btn-sm{font-family:var(--mono);font-size:9px;letter-spacing:1px;background:transparent;border:1px solid var(--border2);color:var(--text2);padding:3px 8px;cursor:pointer;transition:all .15s;text-transform:uppercase;}
+.btn-sm:hover{background:var(--surface2);}
+
+/* MODALS */
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:200;display:none;align-items:center;justify-content:center;backdrop-filter:blur(3px);}
+.modal-ov.open{display:flex;}
+.modal{background:var(--bg2);border:1px solid var(--border2);width:800px;max-width:97vw;max-height:93vh;overflow-y:auto;animation:mIn .2s ease;}
+.modal.sm{width:500px;}
+@keyframes mIn{from{opacity:0;transform:scale(.96) translateY(-8px);}to{opacity:1;transform:none;}}
+.modal-hdr{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.5rem;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;z-index:5;}
+.modal-title{font-family:var(--head);font-size:26px;letter-spacing:4px;color:var(--accent);}
+.modal-title.gold{color:var(--gold);}
+.modal-x{background:transparent;border:none;color:var(--text3);font-size:20px;cursor:pointer;transition:color .15s;padding:0 4px;}
+.modal-x:hover{color:var(--red);}
+.modal-body{padding:1.5rem;}
+.mtabs{display:flex;gap:0;margin-bottom:1.5rem;border-bottom:1px solid var(--border);flex-wrap:wrap;}
+.mtab{font-family:var(--mono);font-size:10px;letter-spacing:1px;text-transform:uppercase;background:transparent;border:none;border-bottom:2px solid transparent;color:var(--text3);padding:8px 14px;cursor:pointer;margin-bottom:-1px;transition:all .15s;}
+.mtab:hover{color:var(--text2);}
+.mtab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.mtab.gold.active{color:var(--gold);border-bottom-color:var(--gold);}
+.mpanel{display:none;}
+.mpanel.active{display:block;}
+.infobox{font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:.5px;line-height:2;margin-bottom:1.5rem;padding:1rem;border:1px solid var(--border);background:var(--surface);}
+.infobox strong{color:var(--text2);}
+.list-row{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border:1px solid var(--border);margin-bottom:4px;background:var(--surface);animation:fadeR .2s ease;}
+.list-row-l{display:flex;align-items:center;gap:10px;}
+.list-row-name{font-family:var(--cond);font-size:13px;font-weight:600;letter-spacing:1px;color:var(--text);}
+.list-row-sub{font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:1px;letter-spacing:1px;}
+.list-row-acts{display:flex;gap:5px;align-items:center;}
+.color-grid{display:flex;gap:8px;flex-wrap:wrap;}
+.color-dot{width:28px;height:28px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all .15s;flex-shrink:0;}
+.color-dot:hover{transform:scale(1.1);}
+.color-dot.sel{border-color:#fff;box-shadow:0 0 8px rgba(255,255,255,.3);}
+.usel{background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:10px;padding:4px 8px;outline:none;cursor:pointer;}
+.notif{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--red);margin-left:4px;vertical-align:middle;animation:pulse 1.5s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+.spinner{display:inline-block;width:12px;height:12px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* WELCOME */
+.welcome{background:var(--bg2);border:1px solid var(--border);padding:2rem;margin-bottom:2rem;display:flex;align-items:center;gap:2rem;}
+.welcome-img{width:80px;height:80px;object-fit:contain;filter:drop-shadow(0 0 15px rgba(58,123,213,.4));flex-shrink:0;}
+.welcome-title{font-family:var(--head);font-size:38px;letter-spacing:4px;color:var(--accent);}
+.welcome-sub{font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:2px;margin-top:4px;}
+.welcome-body{font-size:14px;color:var(--text2);margin-top:.75rem;line-height:1.7;}
+
+@media(max-width:768px){
+  .layout{grid-template-columns:1fr;}
+  .sidebar{position:static;height:auto;border-right:none;border-bottom:1px solid var(--border);}
+  .dept-name{font-size:32px;}
+  .frow,.frow3{grid-template-columns:1fr;}
+  .welcome{flex-direction:column;gap:1rem;text-align:center;}
+  .dept-hdr{flex-direction:column;gap:1rem;}
+  .dept-nums{justify-content:flex-start;}
+}
+</style>
+</head>
+<body>
+<!-- ══════════════ LOGIN ══════════════ -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-box">
+    <img class="login-logo-img" id="loginImg" src="" alt="" style="display:none;">
+    <div class="login-logo-fallback" id="loginFallback">FUDT</div>
+    <div class="login-title">DEPARTMENT TOOLKIT</div>
+    <div class="login-sub">FiveM Universal · Secure Access Portal</div>
+    <div class="login-hr"></div>
+    <input class="login-input" type="text" id="loginUser" placeholder="USERNAME" autocomplete="off">
+    <input class="login-input" type="password" id="loginPass" placeholder="PASSWORD">
+    <div class="login-err" id="loginErr">⚠ Invalid credentials — access denied</div>
+    <button class="login-btn" onclick="doLogin()">▶ AUTHENTICATE</button>
+    <div class="login-hint">Contact your <span>Department High Command</span> to receive login credentials.<br>Admin access is restricted to server leadership only.</div>
+  </div>
+</div>
+
+<!-- ══════════════ ADMIN MODAL ══════════════ -->
+<div class="modal-ov" id="modalAdmin">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div class="modal-title">⚙ ADMIN PANEL</div>
+      <button class="modal-x" onclick="closeModal('modalAdmin')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="mtabs">
+        <button class="mtab active" onclick="aTab('depts',this)">Departments</button>
+        <button class="mtab" onclick="aTab('ranks',this)">Ranks</button>
+        <button class="mtab" onclick="aTab('members',this)">Add Member</button>
+        <button class="mtab" onclick="aTab('users',this)">User Accounts</button>
+        <button class="mtab" onclick="aTab('allreq',this)">All Requests</button>
+        <button class="mtab" onclick="aTab('sheets',this)">Google Sheets</button>
+      </div>
+
+      <!-- DEPARTMENTS -->
+      <div class="mpanel active" id="ap-depts">
+        <div class="frow">
+          <div class="fg"><label class="fl">Department Full Name</label><input class="fi" id="aDeptName" placeholder="e.g. San Andreas Highway Patrol"></div>
+          <div class="fg"><label class="fl">Abbreviation</label><input class="fi" id="aDeptAbbr" placeholder="e.g. SAHP" maxlength="8"></div>
+        </div>
+        <div class="fg">
+          <label class="fl">Department Color</label>
+          <div class="color-grid" id="colorGrid">
+            <div class="color-dot sel" style="background:#3a7bd5" data-c="#3a7bd5"></div>
+            <div class="color-dot" style="background:#c84b4b" data-c="#c84b4b"></div>
+            <div class="color-dot" style="background:#c8923a" data-c="#c8923a"></div>
+            <div class="color-dot" style="background:#c8a84b" data-c="#c8a84b"></div>
+            <div class="color-dot" style="background:#4bc87a" data-c="#4bc87a"></div>
+            <div class="color-dot" style="background:#8a4bc8" data-c="#8a4bc8"></div>
+            <div class="color-dot" style="background:#4bc8c8" data-c="#4bc8c8"></div>
+            <div class="color-dot" style="background:#c84b8a" data-c="#c84b8a"></div>
+            <div class="color-dot" style="background:#e05555" data-c="#e05555"></div>
+            <div class="color-dot" style="background:#55b0e0" data-c="#55b0e0"></div>
+            <div class="color-dot" style="background:#a0c040" data-c="#a0c040"></div>
+            <div class="color-dot" style="background:#e0b040" data-c="#e0b040"></div>
+          </div>
+        </div>
+        <div class="fg"><label class="fl">Department Type</label>
+          <select class="fs" id="aDeptType">
+            <option value="leo">Main LEO</option>
+            <option value="fed">Main Federal</option>
+            <option value="premain">Pre-Main</option>
+            <option value="dod">Department of Defense</option>
+            <option value="misc">Miscellaneous / EMS</option>
+          </select>
+        </div>
+        <button class="fbtn" style="width:100%;" onclick="adminAddDept()">+ CREATE DEPARTMENT</button>
+        <div id="aDeptList" style="margin-top:1rem;"></div>
+      </div>
+
+      <!-- RANKS -->
+      <div class="mpanel" id="ap-ranks">
+        <div class="fg"><label class="fl">Select Department</label><select class="fs" id="aRankDept" onchange="renderARankList()"></select></div>
+        <div class="frow">
+          <div class="fg"><label class="fl">Rank Name</label><input class="fi" id="aRankName" placeholder="e.g. Sergeant"></div>
+          <div class="fg"><label class="fl">Display Order (1 = top rank)</label><input class="fi" id="aRankOrder" type="number" value="10" placeholder="10"></div>
+        </div>
+        <div class="fg"><label class="fl">Rank Tier</label>
+          <select class="fs" id="aRankTier">
+            <option value="hc">High Command (01-05)</option>
+            <option value="thc">Trial High Command</option>
+            <option value="lc">Low Command</option>
+            <option value="sup">Supervisor</option>
+            <option value="patrol">Patrol / Standard</option>
+            <option value="cadet">Cadet / Probationary</option>
+          </select>
+        </div>
+        <button class="fbtn" style="width:100%;" onclick="adminAddRank()">+ ADD RANK</button>
+        <div id="aRankList" style="margin-top:1rem;"></div>
+      </div>
+
+      <!-- ADD MEMBER -->
+      <div class="mpanel" id="ap-members">
+        <div class="frow">
+          <div class="fg"><label class="fl">Full Name</label><input class="fi" id="aMemName" placeholder="J. Smith"></div>
+          <div class="fg"><label class="fl">Badge / Employee ID</label><input class="fi" id="aMemBadge" placeholder="SA-0001"></div>
+        </div>
+        <div class="frow">
+          <div class="fg"><label class="fl">Department</label><select class="fs" id="aMemDept" onchange="loadMemRanks('aMemDept','aMemRank')"></select></div>
+          <div class="fg"><label class="fl">Rank</label><select class="fs" id="aMemRank"></select></div>
+        </div>
+        <div class="frow">
+          <div class="fg"><label class="fl">Join Date</label><input class="fi" id="aMemDate" type="date"></div>
+          <div class="fg"><label class="fl">Status</label>
+            <select class="fs" id="aMemStatus">
+              <option value="active">Active</option>
+              <option value="needs">Needs Improvement</option>
+              <option value="loa">LOA</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
+        </div>
+        <div class="fg"><label class="fl">Discord Username (optional)</label><input class="fi" id="aMemDiscord" placeholder="username#0000"></div>
+        <button class="fbtn" style="width:100%;" onclick="adminAddMember()">+ ADD TO ROSTER</button>
+      </div>
+
+      <!-- USER ACCOUNTS -->
+      <div class="mpanel" id="ap-users">
+        <div class="infobox">
+          <strong>ROLES EXPLAINED</strong><br>
+          ADMIN — Full access to everything, all departments<br>
+          HIGH COMMAND — Can manage their assigned dept: add/edit members, create member accounts, approve dept requests<br>
+          MEMBER — Can only VIEW their assigned department's roster + submit LOA/movement requests
+        </div>
+        <div class="frow">
+          <div class="fg"><label class="fl">Username</label><input class="fi" id="aNewUser" placeholder="john.doe" autocomplete="off"></div>
+          <div class="fg"><label class="fl">Password</label><input class="fi" id="aNewPass" type="password" placeholder="••••••••" autocomplete="off"></div>
+        </div>
+        <div class="frow">
+          <div class="fg"><label class="fl">Display Name</label><input class="fi" id="aNewDisplay" placeholder="J. Smith"></div>
+          <div class="fg"><label class="fl">Role</label>
+            <select class="fs" id="aNewRole">
+              <option value="member">Member (view own dept)</option>
+              <option value="hc">High Command (manage own dept)</option>
+              <option value="admin">Admin (full access)</option>
+            </select>
+          </div>
+        </div>
+        <div class="fg"><label class="fl">Assigned Department</label><select class="fs" id="aNewDept"></select></div>
+        <button class="fbtn" style="width:100%;" onclick="adminCreateUser()">+ CREATE USER ACCOUNT</button>
+        <div id="aUserList" style="margin-top:1.5rem;"></div>
+      </div>
+
+      <!-- ALL REQUESTS -->
+      <div class="mpanel" id="ap-allreq">
+        <div id="aAllReqList"></div>
+      </div>
+
+      <!-- GOOGLE SHEETS -->
+      <div class="mpanel" id="ap-sheets">
+        <div class="infobox">
+          <strong>HOW TO CONNECT YOUR GOOGLE SHEET:</strong><br>
+          1. Create a Google Sheet — columns must be in this order:<br>
+          &nbsp;&nbsp;&nbsp;A: Name | B: Badge | C: Department | D: Rank | E: JoinDate | F: Status<br>
+          2. Status values: <strong>active</strong> / <strong>needs</strong> / <strong>inactive</strong> / <strong>loa</strong><br>
+          3. Department column must exactly match your dept name OR abbreviation<br>
+          4. Click File → Share → Publish to web → Sheet1 → CSV → Publish<br>
+          5. Copy the URL it gives you and paste it below<br>
+          6. Click Save &amp; Sync — the roster will import automatically
+        </div>
+        <div class="fg"><label class="fl">Published CSV URL</label><input class="fi" id="aSheetsUrl" placeholder="https://docs.google.com/spreadsheets/d/e/.../pub?output=csv"></div>
+        <div class="fg"><label class="fl">Auto-Refresh</label>
+          <select class="fs" id="aRefresh">
+            <option value="0">Manual only</option>
+            <option value="60">Every 1 minute</option>
+            <option value="300">Every 5 minutes</option>
+            <option value="600">Every 10 minutes</option>
+            <option value="1800">Every 30 minutes</option>
+          </select>
+        </div>
+        <div class="fg"><label class="fl">Logo Image URL (paste a direct image link)</label><input class="fi" id="aLogoUrl" placeholder="https://i.imgur.com/yourlogo.png"></div>
+        <button class="fbtn" style="width:100%;" onclick="saveSheetCfg()">SAVE &amp; SYNC NOW</button>
+        <div id="aSheetMsg" style="margin-top:1rem;font-family:var(--mono);font-size:10px;letter-spacing:1px;"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ HC MODAL ══════════════ -->
+<div class="modal-ov" id="modalHC">
+  <div class="modal">
+    <div class="modal-hdr">
+      <div class="modal-title gold">⭐ HC COMMAND PANEL</div>
+      <button class="modal-x" onclick="closeModal('modalHC')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="mtabs">
+        <button class="mtab gold active" onclick="hTab('roster',this)">Edit Roster</button>
+        <button class="mtab gold" onclick="hTab('roles',this)">Assign Roles</button>
+        <button class="mtab gold" onclick="hTab('hcreqs',this)">Dept Requests</button>
+      </div>
+
+      <!-- HC EDIT ROSTER -->
+      <div class="mpanel active" id="hp-roster">
+        <div class="infobox" id="hcDeptInfo">Loading your department...</div>
+        <div class="frow">
+          <div class="fg"><label class="fl">Full Name</label><input class="fi" id="hMemName" placeholder="J. Smith"></div>
+          <div class="fg"><label class="fl">Badge / ID</label><input class="fi" id="hMemBadge" placeholder="SA-0001"></div>
+        </div>
+        <div class="frow">
+          <div class="fg"><label class="fl">Rank</label><select class="fs" id="hMemRank"></select></div>
+          <div class="fg"><label class="fl">Status</label>
+            <select class="fs" id="hMemStatus">
+              <option value="active">Active</option>
+              <option value="needs">Needs Improvement</option>
+              <option value="loa">LOA</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
+        </div>
+        <div class="frow">
+          <div class="fg"><label class="fl">Join Date</label><input class="fi" id="hMemDate" type="date"></div>
+          <div class="fg"><label class="fl">Discord (optional)</label><input class="fi" id="hMemDiscord" placeholder="username#0000"></div>
+        </div>
+        <button class="fbtn gold" style="width:100%;" onclick="hcAddMember()">+ ADD MEMBER TO MY DEPARTMENT</button>
+        <div id="hMemberList" style="margin-top:1.5rem;"></div>
+      </div>
+
+      <!-- HC ASSIGN ROLES -->
+      <div class="mpanel" id="hp-roles">
+        <div class="infobox">
+          Create login accounts for members of <strong>your department only</strong>.<br>
+          You can assign <strong>Member</strong> (view only) or <strong>High Command</strong> (manage dept) roles.<br>
+          You cannot create Admin accounts — only the server admin can do that.
+        </div>
+        <div class="frow">
+          <div class="fg"><label class="fl">Username</label><input class="fi" id="hNewUser" placeholder="john.doe" autocomplete="off"></div>
+          <div class="fg"><label class="fl">Password</label><input class="fi" id="hNewPass" type="password" placeholder="••••••••"></div>
+        </div>
+        <div class="frow">
+          <div class="fg"><label class="fl">Display Name</label><input class="fi" id="hNewDisplay" placeholder="J. Smith"></div>
+          <div class="fg"><label class="fl">Role</label>
+            <select class="fs" id="hNewRole">
+              <option value="member">Member (view only)</option>
+              <option value="hc">High Command (manage dept)</option>
+            </select>
+          </div>
+        </div>
+        <button class="fbtn gold" style="width:100%;" onclick="hcCreateUser()">+ CREATE ACCOUNT FOR MY DEPT</button>
+        <div id="hUserList" style="margin-top:1.5rem;"></div>
+      </div>
+
+      <!-- HC DEPT REQUESTS -->
+      <div class="mpanel" id="hp-hcreqs">
+        <div id="hReqList"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════ APP ══════════════ -->
+<div class="wrap" id="appWrap" style="display:none;">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="tb-left">
+      <img class="tb-logo-img" id="topLogoImg" src="" alt="" style="display:none;">
+      <div class="tb-title" id="topLogoText">FUDT</div>
+      <div class="tb-tag">DEPARTMENT TOOLKIT</div>
+    </div>
+    <div class="tb-right">
+      <div class="tb-clock" id="tbClock">--:--:-- UTC</div>
+      <div class="tb-user" id="tbUser" style="display:none;"></div>
+      <div class="tb-role" id="tbRole" style="display:none;"></div>
+      <button class="tb-btn btn-req" id="btnReq" onclick="gotoPage('loa')" style="display:none;">📋 REQUESTS</button>
+      <button class="tb-btn btn-hcp" id="btnHC" onclick="openHC()" style="display:none;">⭐ HC PANEL</button>
+      <button class="tb-btn btn-adm" id="btnAdm" onclick="openAdmin()" style="display:none;">⚙ ADMIN</button>
+      <button class="tb-btn btn-out" onclick="doSignout()">SIGN OUT</button>
+    </div>
+  </div>
+
+  <!-- NAV TABS -->
+  <div class="navtabs">
+    <button class="ntab active" id="ntRoster" onclick="gotoPage('roster')">📁 ROSTER</button>
+    <button class="ntab tloa" id="ntLoa" onclick="gotoPage('loa')">📝 LOA REQUEST</button>
+    <button class="ntab tmov" id="ntMove" onclick="gotoPage('move')">🔄 ROSTER MOVEMENT</button>
+  </div>
+
+  <div class="layout">
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <span class="sb-label">Departments</span>
+      <div class="sb-depts" id="sbDepts"></div>
+      <div class="sb-locked" id="sbLocked" style="display:none;">🔒 Access restricted<br>to your assigned<br>department only</div>
+      <div class="sb-stats">
+        <div class="sstat"><span>Total Personnel</span><span class="sstat-v" id="stTotal">0</span></div>
+        <div class="sstat"><span>Active</span><span class="sstat-v" id="stActive" style="color:var(--green);">0</span></div>
+        <div class="sstat"><span>On LOA</span><span class="sstat-v" id="stLoa" style="color:var(--blue);">0</span></div>
+        <div class="sstat"><span>Inactive</span><span class="sstat-v" id="stInact" style="color:var(--text3);">0</span></div>
+        <div class="sstat"><span>Needs Imprv.</span><span class="sstat-v" id="stNeeds" style="color:var(--amber);">0</span></div>
+      </div>
+    </div>
+
+    <!-- MAIN AREA -->
+    <div class="main">
+
+      <!-- ROSTER PAGE -->
+      <div class="page active" id="pg-roster">
+        <div id="rosterMain"><div class="empty">← Select a department from the sidebar</div></div>
+      </div>
+
+      <!-- LOA PAGE -->
+      <div class="page" id="pg-loa">
+        <div class="form-hdr">
+          <div class="form-title" style="color:var(--blue);">LOA REQUEST</div>
+          <div class="form-sub">LEAVE OF ABSENCE · SUBMIT FOR COMMAND REVIEW</div>
+        </div>
+        <div class="fcard">
+          <div class="fcard-title">Submit New LOA Request</div>
+          <div class="frow">
+            <div class="fg"><label class="fl">Your Full Name</label><input class="fi" id="loaName" placeholder="J. Smith"></div>
+            <div class="fg"><label class="fl">Badge / Employee ID</label><input class="fi" id="loaBadge" placeholder="SA-0001"></div>
+          </div>
+          <div class="frow">
+            <div class="fg"><label class="fl">Your Department</label><select class="fs" id="loaDept"></select></div>
+            <div class="fg"><label class="fl">Your Current Rank</label><input class="fi" id="loaRank" placeholder="e.g. Sergeant"></div>
+          </div>
+          <div class="frow">
+            <div class="fg"><label class="fl">LOA Start Date</label><input class="fi" id="loaStart" type="date"></div>
+            <div class="fg"><label class="fl">Expected Return Date</label><input class="fi" id="loaEnd" type="date"></div>
+          </div>
+          <div class="fg"><label class="fl">Reason for LOA</label><textarea class="fta" id="loaReason" placeholder="Provide a brief reason for your leave of absence (personal, work, vacation, etc.)..."></textarea></div>
+          <div class="fg"><label class="fl">Discord Username</label><input class="fi" id="loaDiscord" placeholder="username#0000"></div>
+          <button class="fbtn" onclick="submitLOA()">▶ SUBMIT LOA REQUEST</button>
+          <div class="fmsg" id="loaMsg"></div>
+        </div>
+        <div class="fcard">
+          <div class="fcard-title">My LOA History</div>
+          <div id="myLoaList"><div class="empty">No LOA requests on file.</div></div>
+        </div>
+      </div>
+
+      <!-- MOVEMENT PAGE -->
+      <div class="page" id="pg-move">
+        <div class="form-hdr">
+          <div class="form-title" style="color:var(--amber);">ROSTER MOVEMENT</div>
+          <div class="form-sub">TRANSFER · PROMOTION · DEMOTION · RESIGNATION · REINSTATEMENT</div>
+        </div>
+        <div class="fcard">
+          <div class="fcard-title">Submit Roster Movement Request</div>
+          <div class="frow">
+            <div class="fg"><label class="fl">Your Full Name</label><input class="fi" id="movName" placeholder="J. Smith"></div>
+            <div class="fg"><label class="fl">Badge / Employee ID</label><input class="fi" id="movBadge" placeholder="SA-0001"></div>
+          </div>
+          <div class="frow">
+            <div class="fg"><label class="fl">Current Department</label><select class="fs" id="movDeptFrom"></select></div>
+            <div class="fg"><label class="fl">Current Rank</label><input class="fi" id="movRankFrom" placeholder="Your current rank"></div>
+          </div>
+          <div class="fg"><label class="fl">Movement Type</label>
+            <select class="fs" id="movType" onchange="toggleMovFields()">
+              <option value="transfer">Transfer (Change Department)</option>
+              <option value="promotion">Promotion</option>
+              <option value="demotion">Demotion</option>
+              <option value="resignation">Resignation</option>
+              <option value="termination">Termination Request</option>
+              <option value="reinstatement">Reinstatement Request</option>
+            </select>
+          </div>
+          <div id="movTransferGroup" class="frow">
+            <div class="fg"><label class="fl">Destination Department</label><select class="fs" id="movDeptTo"></select></div>
+            <div class="fg"><label class="fl">Expected New Rank (if known)</label><input class="fi" id="movRankTo" placeholder="Leave blank if unknown"></div>
+          </div>
+          <div id="movRankGroup" class="frow" style="display:none;">
+            <div class="fg"><label class="fl">New Rank</label><input class="fi" id="movNewRank" placeholder="Rank after movement"></div>
+            <div class="fg"><label class="fl">Effective Date</label><input class="fi" id="movEffDate" type="date"></div>
+          </div>
+          <div class="fg"><label class="fl">Reason / Additional Notes</label><textarea class="fta" id="movReason" placeholder="Provide context for this roster movement..."></textarea></div>
+          <div class="fg"><label class="fl">Discord Username</label><input class="fi" id="movDiscord" placeholder="username#0000"></div>
+          <button class="fbtn amber" onclick="submitMOV()">▶ SUBMIT MOVEMENT REQUEST</button>
+          <div class="fmsg" id="movMsg"></div>
+        </div>
+        <div class="fcard">
+          <div class="fcard-title">My Movement History</div>
+          <div id="myMovList"><div class="empty">No movement requests on file.</div></div>
+        </div>
+      </div>
+
+    </div><!-- /main -->
+  </div><!-- /layout -->
+</div><!-- /wrap -->
+
+<script>
+// ════════════════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════════════════
+const ADMIN_PASS = 'ngisontop';
+let CU = null; // current user
+let AD = null; // active dept id
+let CC = '#3a7bd5'; // current color pick
+
+const S = {
+  depts:[],    // [{id,name,abbr,color,type}]
+  ranks:{},    // {deptId:[{id,name,order,tier}]}
+  members:[],  // [{id,name,badge,dept,rank,date,status,discord}]
+  users:[],    // [{username,password,displayName,role,deptId}]
+  loas:[],     // [{id,...,status,ts,by}]
+  movs:[],     // [{id,...,status,ts,by}]
+  logo:'',
+  sheetsUrl:'',
+  refresh:0,
+};
+
+function load(){
+  ['depts','ranks','members','users','loas','movs','logo','sheetsUrl'].forEach(k=>{
+    const v=localStorage.getItem('fudt2_'+k);
+    if(v) try{S[k]=JSON.parse(v);}catch(e){}
+  });
+  if(typeof S.logo!=='string') S.logo='';
+  if(typeof S.sheetsUrl!=='string') S.sheetsUrl='';
+}
+
+function save(){
+  ['depts','ranks','members','users','loas','movs','logo','sheetsUrl'].forEach(k=>{
+    localStorage.setItem('fudt2_'+k,JSON.stringify(S[k]));
+  });
+}
+
+function uid(){ return '_'+Math.random().toString(36).slice(2,10)+Date.now().toString(36); }
+
+// ════════════════════════════════════════════════════════
+//  SEED DEMO DATA
+// ════════════════════════════════════════════════════════
+function seed(){
+  if(S.depts.length>0) return;
+  S.depts=[
+    {id:'d1',name:'San Andreas Highway Patrol',abbr:'SAHP',color:'#3a7bd5',type:'leo'},
+    {id:'d2',name:'Blaine County Sheriffs Office',abbr:'BCSO',color:'#c8923a',type:'leo'},
+    {id:'d3',name:'Los Santos Police Department',abbr:'LSPD',color:'#4bc8c8',type:'leo'},
+    {id:'d4',name:'Federal Investigation Bureau',abbr:'FIB',color:'#c84b4b',type:'fed'},
+    {id:'d5',name:'Armed Forces',abbr:'AF',color:'#4bc87a',type:'dod'},
+  ];
+  S.ranks={
+    d1:[
+      {id:'r1a',name:'Commissioner',order:1,tier:'hc'},
+      {id:'r1b',name:'Deputy Commissioner',order:2,tier:'hc'},
+      {id:'r1c',name:'Assistant Commissioner',order:3,tier:'hc'},
+      {id:'r1d',name:'Captain',order:4,tier:'lc'},
+      {id:'r1e',name:'Lieutenant',order:5,tier:'lc'},
+      {id:'r1f',name:'Sergeant',order:6,tier:'sup'},
+      {id:'r1g',name:'Corporal',order:7,tier:'sup'},
+      {id:'r1h',name:'Trooper I',order:8,tier:'patrol'},
+      {id:'r1i',name:'Trooper II',order:9,tier:'patrol'},
+      {id:'r1j',name:'Cadet',order:10,tier:'cadet'},
+    ],
+    d2:[
+      {id:'r2a',name:'Sheriff',order:1,tier:'hc'},
+      {id:'r2b',name:'Undersheriff',order:2,tier:'hc'},
+      {id:'r2c',name:'Captain',order:3,tier:'lc'},
+      {id:'r2d',name:'Sergeant',order:4,tier:'sup'},
+      {id:'r2e',name:'Senior Deputy',order:5,tier:'patrol'},
+      {id:'r2f',name:'Deputy',order:6,tier:'patrol'},
+      {id:'r2g',name:'Cadet',order:7,tier:'cadet'},
+    ],
+    d3:[
+      {id:'r3a',name:'Chief of Police',order:1,tier:'hc'},
+      {id:'r3b',name:'Deputy Chief',order:2,tier:'hc'},
+      {id:'r3c',name:'Commander',order:3,tier:'lc'},
+      {id:'r3d',name:'Lieutenant',order:4,tier:'sup'},
+      {id:'r3e',name:'Sergeant',order:5,tier:'sup'},
+      {id:'r3f',name:'Officer I',order:6,tier:'patrol'},
+      {id:'r3g',name:'Officer II',order:7,tier:'patrol'},
+      {id:'r3h',name:'Recruit',order:8,tier:'cadet'},
+    ],
+    d4:[
+      {id:'r4a',name:'Director',order:1,tier:'hc'},
+      {id:'r4b',name:'Assistant Director',order:2,tier:'hc'},
+      {id:'r4c',name:'Supervisory Special Agent',order:3,tier:'lc'},
+      {id:'r4d',name:'Special Agent',order:4,tier:'patrol'},
+      {id:'r4e',name:'Probationary Agent',order:5,tier:'cadet'},
+    ],
+    d5:[
+      {id:'r5a',name:'General (O-10)',order:1,tier:'hc'},
+      {id:'r5b',name:'Colonel (O-6)',order:2,tier:'lc'},
+      {id:'r5c',name:'Major (O-4)',order:3,tier:'lc'},
+      {id:'r5d',name:'Captain (O-3)',order:4,tier:'sup'},
+      {id:'r5e',name:'Staff Sergeant (E-6)',order:5,tier:'patrol'},
+      {id:'r5f',name:'Sergeant (E-5)',order:6,tier:'patrol'},
+      {id:'r5g',name:'Private (E-1)',order:7,tier:'cadet'},
+    ],
+  };
+  S.members=[
+    {id:'m01',name:'J. Reeves',badge:'SAHP-001',dept:'d1',rank:'Commissioner',date:'2023-01-15',status:'active',discord:'jreeves#0001'},
+    {id:'m02',name:'M. Torres',badge:'SAHP-012',dept:'d1',rank:'Captain',date:'2023-03-08',status:'active',discord:'mtorres#0002'},
+    {id:'m03',name:'K. Walsh',badge:'SAHP-027',dept:'d1',rank:'Sergeant',date:'2023-06-20',status:'loa',discord:'kwalsh#0003'},
+    {id:'m04',name:'D. Park',badge:'SAHP-033',dept:'d1',rank:'Trooper I',date:'2023-09-01',status:'active',discord:''},
+    {id:'m05',name:'L. Briggs',badge:'SAHP-041',dept:'d1',rank:'Trooper II',date:'2024-01-10',status:'needs',discord:''},
+    {id:'m06',name:'R. Nguyen',badge:'SAHP-055',dept:'d1',rank:'Cadet',date:'2024-03-22',status:'active',discord:''},
+    {id:'m07',name:'A. Castillo',badge:'BCSO-001',dept:'d2',rank:'Sheriff',date:'2022-11-05',status:'active',discord:''},
+    {id:'m08',name:'T. Morgan',badge:'BCSO-008',dept:'d2',rank:'Deputy',date:'2023-02-14',status:'active',discord:''},
+    {id:'m09',name:'S. Bell',badge:'BCSO-019',dept:'d2',rank:'Cadet',date:'2023-08-30',status:'inactive',discord:''},
+    {id:'m10',name:'C. Rivera',badge:'LSPD-001',dept:'d3',rank:'Chief of Police',date:'2022-05-18',status:'active',discord:''},
+    {id:'m11',name:'P. Watts',badge:'LSPD-009',dept:'d3',rank:'Lieutenant',date:'2023-04-02',status:'active',discord:''},
+    {id:'m12',name:'G. Brooks',badge:'FIB-001',dept:'d4',rank:'Director',date:'2022-08-14',status:'active',discord:''},
+    {id:'m13',name:'H. Vance',badge:'FIB-005',dept:'d4',rank:'Special Agent',date:'2023-05-30',status:'active',discord:''},
+    {id:'m14',name:'N. Stone',badge:'AF-010',dept:'d5',rank:'General (O-10)',date:'2022-03-01',status:'active',discord:''},
+    {id:'m15',name:'B. Atlas',badge:'AF-022',dept:'d5',rank:'Sergeant (E-5)',date:'2023-07-19',status:'active',discord:''},
+  ];
+  S.users=[
+    {username:'admin',password:'ngisontop',displayName:'Administrator',role:'admin',deptId:'all'},
+    {username:'sahp_hc',password:'sahp1234',displayName:'SAHP Command',role:'hc',deptId:'d1'},
+    {username:'trooper1',password:'patrol123',displayName:'D. Park',role:'member',deptId:'d1'},
+  ];
+  save();
+}
+
+// ════════════════════════════════════════════════════════
+//  CLOCK
+// ════════════════════════════════════════════════════════
+function tickClock(){
+  const n=new Date();
+  const pad=x=>String(x).padStart(2,'0');
+  document.getElementById('tbClock').textContent=`${pad(n.getUTCHours())}:${pad(n.getUTCMinutes())}:${pad(n.getUTCSeconds())} UTC`;
+}
+setInterval(tickClock,1000); tickClock();
+
+// ════════════════════════════════════════════════════════
+//  LOGO
+// ════════════════════════════════════════════════════════
+function applyLogo(url){
+  if(!url) return;
+  ['loginImg','topLogoImg'].forEach(id=>{
+    const el=document.getElementById(id);
+    el.src=url; el.style.display='block';
+    el.onerror=()=>{ el.style.display='none'; };
+  });
+  document.getElementById('loginFallback').style.display='none';
+  document.getElementById('topLogoText').style.display='none';
+}
+
+// ════════════════════════════════════════════════════════
+//  AUTH
+// ════════════════════════════════════════════════════════
+function doLogin(){
+  const u=document.getElementById('loginUser').value.trim().toLowerCase();
+  const p=document.getElementById('loginPass').value;
+  const errEl=document.getElementById('loginErr');
+
+  let user=null;
+  if(u==='admin'&&p===ADMIN_PASS){
+    user={username:'admin',password:ADMIN_PASS,displayName:'Administrator',role:'admin',deptId:'all'};
+  } else {
+    user=S.users.find(x=>x.username.toLowerCase()===u&&x.password===p);
+  }
+
+  if(!user){ errEl.style.display='block'; setTimeout(()=>errEl.style.display='none',3500); return; }
+
+  CU=user;
+  document.getElementById('loginOverlay').classList.add('hidden');
+  document.getElementById('appWrap').style.display='';
+  setupTopbar();
+  buildSidebar();
+  const acc=accessibleDepts();
+  if(acc.length>0){ AD=acc[0].id; }
+  renderAll();
+  populateAllFormDepts();
+  if(S.logo) applyLogo(S.logo);
+}
+
+document.getElementById('loginPass').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
+document.getElementById('loginUser').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
+
+function doSignout(){
+  CU=null; AD=null;
+  document.getElementById('appWrap').style.display='none';
+  document.getElementById('loginOverlay').classList.remove('hidden');
+  document.getElementById('loginUser').value='';
+  document.getElementById('loginPass').value='';
+}
+
+function accessibleDepts(){
+  if(!CU) return [];
+  if(CU.role==='admin') return S.depts;
+  return S.depts.filter(d=>d.id===CU.deptId);
+}
+
+function setupTopbar(){
+  const u=CU;
+  document.getElementById('tbUser').textContent='👤 '+u.displayName;
+  document.getElementById('tbUser').style.display='';
+  const rb=document.getElementById('tbRole');
+  rb.style.display='';
+  if(u.role==='admin'){ rb.className='tb-role role-a'; rb.textContent='⚡ ADMIN'; document.getElementById('btnAdm').style.display=''; document.getElementById('btnHC').style.display='none'; }
+  else if(u.role==='hc'){ rb.className='tb-role role-h'; rb.textContent='⭐ HIGH COMMAND'; document.getElementById('btnHC').style.display=''; document.getElementById('btnAdm').style.display='none'; }
+  else { rb.className='tb-role role-m'; rb.textContent='MEMBER'; document.getElementById('btnAdm').style.display='none'; document.getElementById('btnHC').style.display='none'; }
+  document.getElementById('btnReq').style.display='';
+}
+
+// ════════════════════════════════════════════════════════
+//  PAGE NAV
+// ════════════════════════════════════════════════════════
+function gotoPage(p){
+  document.querySelectorAll('.page').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.ntab').forEach(x=>x.classList.remove('active'));
+  document.getElementById('pg-'+p).classList.add('active');
+  const map={roster:'ntRoster',loa:'ntLoa',move:'ntMove'};
+  document.getElementById(map[p]).classList.add('active');
+  if(p==='loa'){ populateAllFormDepts(); renderMyLoas(); }
+  if(p==='move'){ populateAllFormDepts(); renderMyMovs(); }
+}
+
+// ════════════════════════════════════════════════════════
+//  SIDEBAR
+// ════════════════════════════════════════════════════════
+function buildSidebar(){
+  const acc=accessibleDepts();
+  const sb=document.getElementById('sbDepts');
+  sb.innerHTML='';
+  document.getElementById('sbLocked').style.display=(CU?.role!=='admin'&&acc.length<=1)?'':'none';
+
+  acc.forEach(d=>{
+    const cnt=S.members.filter(m=>m.dept===d.id).length;
+    const btn=document.createElement('button');
+    btn.className='dept-btn'+(AD===d.id?' active':'');
+    btn.innerHTML=`<span class="dept-dot" style="background:${d.color}"></span>${d.abbr}<span class="dept-count">${cnt}</span>`;
+    btn.onclick=()=>{ AD=d.id; buildSidebar(); renderRoster(); gotoPage('roster'); };
+    sb.appendChild(btn);
+  });
+
+  // stats across accessible depts
+  const ids=acc.map(d=>d.id);
+  const all=S.members.filter(m=>ids.includes(m.dept));
+  document.getElementById('stTotal').textContent=all.length;
+  document.getElementById('stActive').textContent=all.filter(m=>m.status==='active').length;
+  document.getElementById('stLoa').textContent=all.filter(m=>m.status==='loa').length;
+  document.getElementById('stInact').textContent=all.filter(m=>m.status==='inactive').length;
+  document.getElementById('stNeeds').textContent=all.filter(m=>m.status==='needs').length;
+}
+
+// ════════════════════════════════════════════════════════
+//  ROSTER RENDER
+// ════════════════════════════════════════════════════════
+function renderAll(){ buildSidebar(); renderRoster(); }
+
+function renderRoster(){
+  const main=document.getElementById('rosterMain');
+  if(!AD){ main.innerHTML='<div class="empty">← Select a department from the sidebar</div>'; return; }
+  const acc=accessibleDepts();
+  if(!acc.find(d=>d.id===AD)){ main.innerHTML='<div class="empty">🔒 Access denied — you are not assigned to this department.</div>'; return; }
+  const dept=S.depts.find(d=>d.id===AD);
+  if(!dept) return;
+  const dm=S.members.filter(m=>m.dept===dept.id);
+  const canEdit=CU?.role==='admin'||(CU?.role==='hc'&&CU?.deptId===dept.id);
+
+  main.innerHTML=`
+    <div class="dept-hdr">
+      <div class="dept-hdr-left">
+        <div class="dept-name" style="color:${dept.color};text-shadow:0 0 30px ${dept.color}44">${dept.name.toUpperCase()}</div>
+        <div class="dept-sub">${dept.abbr} · ${(dept.type||'DEPT').toUpperCase()} · ACTIVE PERSONNEL ROSTER</div>
+      </div>
+      <div class="dept-nums">
+        <div class="dnum"><div class="dnum-v" style="color:${dept.color}">${dm.length}</div><div class="dnum-l">Total</div></div>
+        <div class="dnum"><div class="dnum-v" style="color:var(--green)">${dm.filter(m=>m.status==='active').length}</div><div class="dnum-l">Active</div></div>
+        <div class="dnum"><div class="dnum-v" style="color:var(--blue)">${dm.filter(m=>m.status==='loa').length}</div><div class="dnum-l">LOA</div></div>
+        <div class="dnum"><div class="dnum-v" style="color:var(--text3)">${dm.filter(m=>m.status==='inactive').length}</div><div class="dnum-l">Inactive</div></div>
+      </div>
+    </div>
+    <div class="filter-row">
+      <input class="f-input" id="fSearch" placeholder="SEARCH PERSONNEL NAME, BADGE, RANK..." oninput="applyFilter()">
+      <select class="f-sel" id="fStatus" onchange="applyFilter()">
+        <option value="">All Status</option>
+        <option value="active">Active</option>
+        <option value="needs">Needs Improvement</option>
+        <option value="loa">LOA</option>
+        <option value="inactive">Inactive</option>
+      </select>
+      <span class="f-count" id="fCount">${dm.length} records</span>
+    </div>
+    <div id="rosterRows"></div>
+  `;
+  applyFilter();
+}
+
+function applyFilter(){
+  const srch=(document.getElementById('fSearch')?.value||'').toLowerCase();
+  const sf=document.getElementById('fStatus')?.value||'';
+  const dept=S.depts.find(d=>d.id===AD);
+  if(!dept) return;
+  const canEdit=CU?.role==='admin'||(CU?.role==='hc'&&CU?.deptId===dept.id);
+
+  let members=S.members.filter(m=>m.dept===dept.id);
+  if(srch) members=members.filter(m=>[m.name,m.badge,m.rank].some(x=>x.toLowerCase().includes(srch)));
+  if(sf) members=members.filter(m=>m.status===sf);
+
+  const countEl=document.getElementById('fCount');
+  if(countEl) countEl.textContent=members.length+' records';
+
+  const ranks=(S.ranks[dept.id]||[]).sort((a,b)=>a.order-b.order);
+  const rankNames=ranks.map(r=>r.name);
+  const grp={};
+  const norank=[];
+  members.forEach(m=>{
+    if(rankNames.includes(m.rank)){ if(!grp[m.rank]) grp[m.rank]=[]; grp[m.rank].push(m); }
+    else norank.push(m);
+  });
+  const ordered=rankNames.filter(r=>grp[r]);
+  if(norank.length){ ordered.push('__other'); grp['__other']=norank; }
+
+  const cont=document.getElementById('rosterRows');
+  if(!cont) return;
+  if(members.length===0){ cont.innerHTML='<div class="empty">No personnel match your search.</div>'; return; }
+
+  cont.innerHTML=ordered.map(rn=>{
+    const g=grp[rn];
+    const dn=rn==='__other'?'Unranked / Other':rn;
+    return `
+      <div class="rank-sec">
+        <div class="rank-hdr" onclick="toggleRankSec(this)">
+          <span class="rank-hdr-name">${dn}</span>
+          <span class="rank-hdr-ct">${g.length} personnel</span>
+          <span class="rank-chev">▼</span>
+        </div>
+        <div class="collapsible" style="max-height:2000px;">
+          <table class="rtable">
+            <thead><tr>
+              <th>Personnel</th><th>Rank</th><th>Join Date</th><th>Status</th>
+              ${canEdit?'<th>Quick Edit</th>':''}
+            </tr></thead>
+            <tbody>${g.map((m,i)=>`
+              <tr style="animation-delay:${i*35}ms">
+                <td>
+                  <div class="mem-name">${m.name}</div>
+                  <div class="mem-id">${m.badge}${m.discord?' · '+m.discord:''}</div>
+                </td>
+                <td><span class="brank">${m.rank}</span></td>
+                <td><span style="font-family:var(--mono);font-size:11px;color:var(--text3);">${fmtDate(m.date)}</span></td>
+                <td>${statusBadge(m.status)}</td>
+                ${canEdit?`
+                  <td>
+                    <div style="display:flex;gap:5px;align-items:center;">
+                      <select class="inline-sel" onchange="quickStatus('${m.id}',this.value)">
+                        <option value="active" ${m.status==='active'?'selected':''}>Active</option>
+                        <option value="needs" ${m.status==='needs'?'selected':''}>Needs Imprv.</option>
+                        <option value="loa" ${m.status==='loa'?'selected':''}>LOA</option>
+                        <option value="inactive" ${m.status==='inactive'?'selected':''}>Inactive</option>
+                      </select>
+                      <button class="btn-del" onclick="delMember('${m.id}')">✕</button>
+                    </div>
+                  </td>`:''}
+              </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function toggleRankSec(hdr){
+  hdr.classList.toggle('col');
+  hdr.nextElementSibling.classList.toggle('col');
+}
+
+function quickStatus(id,val){
+  const m=S.members.find(x=>x.id===id);
+  if(m){ m.status=val; save(); buildSidebar(); }
+}
+
+function delMember(id){
+  if(!confirm('Remove this personnel record?')) return;
+  S.members=S.members.filter(m=>m.id!==id);
+  save(); renderAll();
+}
+
+function statusBadge(s){
+  const map={active:['bs-active','ACTIVE'],needs:['bs-needs','NEEDS IMPRV.'],inactive:['bs-inactive','INACTIVE'],loa:['bs-loa','LOA']};
+  const [c,l]=map[s]||['bs-inactive',s.toUpperCase()];
+  return `<span class="bstatus ${c}">${l}</span>`;
+}
+
+function fmtDate(d){
+  if(!d) return '—';
+  try{ return new Date(d+'T00:00:00').toLocaleDateString('en-US',{year:'numeric',month:'short',day:'2-digit'}); }catch(e){ return d; }
+}
+
+// ════════════════════════════════════════════════════════
+//  LOA REQUESTS
+// ════════════════════════════════════════════════════════
+function populateAllFormDepts(){
+  const acc=accessibleDepts();
+  ['loaDept','movDeptFrom','movDeptTo','aNewDept'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el) return;
+    el.innerHTML=acc.map(d=>`<option value="${d.id}">${d.name} (${d.abbr})</option>`).join('');
+  });
+}
+
+function submitLOA(){
+  const name=v('loaName'),badge=v('loaBadge'),dept=v('loaDept'),rank=v('loaRank');
+  const start=v('loaStart'),end=v('loaEnd'),reason=v('loaReason'),discord=v('loaDiscord');
+  const msg=document.getElementById('loaMsg');
+  if(!name||!badge||!dept||!start||!end||!reason){ showMsg(msg,'err','⚠ Please fill in all required fields.'); return; }
+  S.loas.push({id:uid(),name,badge,dept,rank,start,end,reason,discord,status:'pending',ts:Date.now(),by:CU?.username||'guest'});
+  save();
+  showMsg(msg,'ok','✓ LOA request submitted — awaiting command review.');
+  ['loaName','loaBadge','loaRank','loaStart','loaEnd','loaReason','loaDiscord'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  renderMyLoas();
+}
+
+function renderMyLoas(){
+  const el=document.getElementById('myLoaList');
+  let list=S.loas;
+  if(CU?.role!=='admin') list=list.filter(r=>r.by===CU?.username);
+  const isAdm=CU?.role==='admin';
+  const isHC=CU?.role==='hc';
+  if(!list.length){ el.innerHTML='<div class="empty">No LOA requests on file.</div>'; return; }
+  el.innerHTML='<div class="req-grid">'+list.sort((a,b)=>b.ts-a.ts).map(r=>{
+    const d=S.depts.find(x=>x.id===r.dept);
+    const canAct=isAdm||(isHC&&CU?.deptId===r.dept);
+    return `<div class="req-card">
+      <div class="req-card-body">
+        <div class="req-card-hdr">
+          <span class="rtag rt-loa">LOA</span>
+          <span class="rtag rt-${r.status==='pending'?'pend':r.status==='approved'?'appr':'deni'}">${r.status.toUpperCase()}</span>
+        </div>
+        <div class="req-name">${r.name} — ${r.badge}</div>
+        <div class="req-meta">
+          Dept: ${d?.abbr||r.dept} &nbsp;|&nbsp; Rank: ${r.rank||'—'}<br>
+          Period: ${fmtDate(r.start)} → ${fmtDate(r.end)}<br>
+          Reason: ${r.reason}<br>
+          Discord: ${r.discord||'—'} · ${new Date(r.ts).toLocaleString()}
+        </div>
+      </div>
+      <div class="req-acts">
+        ${canAct?`<button class="btn-appr" onclick="resolveReq('loa','${r.id}','approved')">APPROVE</button><button class="btn-deny" onclick="resolveReq('loa','${r.id}','denied')">DENY</button>`:''}
+        ${isAdm?`<button class="btn-del" onclick="delReq('loa','${r.id}')">DEL</button>`:''}
+      </div>
+    </div>`;
+  }).join('')+'</div>';
+}
+
+// ════════════════════════════════════════════════════════
+//  ROSTER MOVEMENT
+// ════════════════════════════════════════════════════════
+function toggleMovFields(){
+  const t=v('movType');
+  const tg=document.getElementById('movTransferGroup');
+  const rg=document.getElementById('movRankGroup');
+  if(t==='transfer'){ tg.style.display=''; rg.style.display='none'; }
+  else if(t==='promotion'||t==='demotion'){ tg.style.display='none'; rg.style.display=''; }
+  else { tg.style.display='none'; rg.style.display='none'; }
+}
+
+function submitMOV(){
+  const name=v('movName'),badge=v('movBadge'),deptFrom=v('movDeptFrom'),rankFrom=v('movRankFrom');
+  const type=v('movType'),deptTo=v('movDeptTo'),rankTo=v('movRankTo');
+  const newRank=v('movNewRank'),effDate=v('movEffDate'),reason=v('movReason'),discord=v('movDiscord');
+  const msg=document.getElementById('movMsg');
+  if(!name||!badge||!deptFrom||!reason){ showMsg(msg,'err','⚠ Please fill in all required fields.'); return; }
+  S.movs.push({
+    id:uid(),name,badge,deptFrom,rankFrom,type,
+    deptTo:type==='transfer'?deptTo:deptFrom,
+    rankTo:type==='transfer'?rankTo:(type==='promotion'||type==='demotion')?newRank:'',
+    effDate,reason,discord,status:'pending',ts:Date.now(),by:CU?.username||'guest'
+  });
+  save();
+  showMsg(msg,'ok','✓ Movement request submitted — awaiting command review.');
+  ['movName','movBadge','movRankFrom','movRankTo','movNewRank','movEffDate','movReason','movDiscord'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  renderMyMovs();
+}
+
+function renderMyMovs(){
+  const el=document.getElementById('myMovList');
+  let list=S.movs;
+  if(CU?.role!=='admin') list=list.filter(r=>r.by===CU?.username);
+  const isAdm=CU?.role==='admin';
+  const isHC=CU?.role==='hc';
+  if(!list.length){ el.innerHTML='<div class="empty">No movement requests on file.</div>'; return; }
+  el.innerHTML='<div class="req-grid">'+list.sort((a,b)=>b.ts-a.ts).map(r=>{
+    const dF=S.depts.find(x=>x.id===r.deptFrom);
+    const dT=S.depts.find(x=>x.id===r.deptTo);
+    const canAct=isAdm||(isHC&&CU?.deptId===r.deptFrom);
+    return `<div class="req-card">
+      <div class="req-card-body">
+        <div class="req-card-hdr">
+          <span class="rtag rt-mov">${r.type.toUpperCase()}</span>
+          <span class="rtag rt-${r.status==='pending'?'pend':r.status==='approved'?'appr':'deni'}">${r.status.toUpperCase()}</span>
+        </div>
+        <div class="req-name">${r.name} — ${r.badge}</div>
+        <div class="req-meta">
+          From: ${dF?.abbr||r.deptFrom} / ${r.rankFrom||'—'}
+          ${r.type==='transfer'?`<br>To: ${dT?.abbr||r.deptTo} / ${r.rankTo||'TBD'}`:''}
+          ${r.type==='promotion'||r.type==='demotion'?`<br>New Rank: ${r.rankTo||'—'}`:''}
+          <br>Reason: ${r.reason}
+          <br>Discord: ${r.discord||'—'} · ${new Date(r.ts).toLocaleString()}
+        </div>
+      </div>
+      <div class="req-acts">
+        ${canAct?`<button class="btn-appr" onclick="resolveReq('mov','${r.id}','approved')">APPROVE</button><button class="btn-deny" onclick="resolveReq('mov','${r.id}','denied')">DENY</button>`:''}
+        ${isAdm?`<button class="btn-del" onclick="delReq('mov','${r.id}')">DEL</button>`:''}
+      </div>
+    </div>`;
+  }).join('')+'</div>';
+}
+
+function resolveReq(type,id,status){
+  const list=type==='loa'?S.loas:S.movs;
+  const r=list.find(x=>x.id===id);
+  if(r){ r.status=status; save(); }
+  if(type==='loa'){ renderMyLoas(); renderAdminReqs(); renderHCReqs(); }
+  else { renderMyMovs(); renderAdminReqs(); renderHCReqs(); }
+}
+
+function delReq(type,id){
+  if(!confirm('Delete this request permanently?')) return;
+  if(type==='loa') S.loas=S.loas.filter(x=>x.id!==id);
+  else S.movs=S.movs.filter(x=>x.id!==id);
+  save(); renderMyLoas(); renderMyMovs(); renderAdminReqs();
+}
+
+// ════════════════════════════════════════════════════════
+//  ADMIN PANEL
+// ════════════════════════════════════════════════════════
+function openAdmin(){
+  if(CU?.role!=='admin') return;
+  document.getElementById('modalAdmin').classList.add('open');
+  populateAdminSelects();
+  renderADeptList();
+  renderAdminReqs();
+  renderAUserList();
+  if(S.sheetsUrl) document.getElementById('aSheetsUrl').value=S.sheetsUrl;
+  if(S.logo) document.getElementById('aLogoUrl').value=S.logo;
+}
+
+function closeModal(id){
+  document.getElementById(id).classList.remove('open');
+  renderAll();
+  populateAllFormDepts();
+}
+
+function aTab(t,btn){
+  document.querySelectorAll('#modalAdmin .mpanel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('#modalAdmin .mtab').forEach(b=>b.classList.remove('active'));
+  document.getElementById('ap-'+t).classList.add('active');
+  if(btn) btn.classList.add('active');
+  if(t==='ranks'||t==='members') populateAdminSelects();
+  if(t==='allreq') renderAdminReqs();
+  if(t==='users') renderAUserList();
+}
+
+function populateAdminSelects(){
+  ['aRankDept','aMemDept','aNewDept'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el) return;
+    el.innerHTML=S.depts.map(d=>`<option value="${d.id}">${d.name} (${d.abbr})</option>`).join('');
+  });
+  loadMemRanks('aMemDept','aMemRank');
+  renderARankList();
+}
+
+document.getElementById('colorGrid').addEventListener('click',e=>{
+  const dot=e.target.closest('.color-dot');
+  if(!dot) return;
+  document.querySelectorAll('.color-dot').forEach(d=>d.classList.remove('sel'));
+  dot.classList.add('sel');
+  CC=dot.dataset.c;
+});
+
+function adminAddDept(){
+  const name=v('aDeptName').trim();
+  const abbr=v('aDeptAbbr').trim().toUpperCase();
+  const type=v('aDeptType');
+  if(!name||!abbr){ alert('Name and abbreviation required.'); return; }
+  const id='d'+uid();
+  S.depts.push({id,name,abbr,color:CC,type});
+  S.ranks[id]=[];
+  save();
+  document.getElementById('aDeptName').value='';
+  document.getElementById('aDeptAbbr').value='';
+  renderADeptList(); populateAdminSelects(); populateAllFormDepts(); buildSidebar();
+}
+
+function adminDelDept(id){
+  if(!confirm('Delete department and ALL its members?')) return;
+  S.depts=S.depts.filter(d=>d.id!==id);
+  delete S.ranks[id];
+  S.members=S.members.filter(m=>m.dept!==id);
+  if(AD===id) AD=null;
+  save(); renderADeptList(); populateAdminSelects(); populateAllFormDepts(); buildSidebar();
+}
+
+function renderADeptList(){
+  const el=document.getElementById('aDeptList');
+  el.innerHTML=S.depts.map(d=>{
+    const cnt=S.members.filter(m=>m.dept===d.id).length;
+    return `<div class="list-row">
+      <div class="list-row-l">
+        <span class="dept-dot" style="background:${d.color}"></span>
+        <div>
+          <div class="list-row-name">${d.name}</div>
+          <div class="list-row-sub">${d.abbr} · ${(d.type||'DEPT').toUpperCase()} · ${cnt} members</div>
+        </div>
+      </div>
+      <div class="list-row-acts"><button class="btn-del" onclick="adminDelDept('${d.id}')">DELETE</button></div>
+    </div>`;
+  }).join('');
+}
+
+function adminAddRank(){
+  const deptId=v('aRankDept');
+  const name=v('aRankName').trim();
+  const order=parseInt(v('aRankOrder'))||99;
+  const tier=v('aRankTier');
+  if(!deptId||!name){ alert('Department and rank name required.'); return; }
+  if(!S.ranks[deptId]) S.ranks[deptId]=[];
+  S.ranks[deptId].push({id:'r'+uid(),name,order,tier});
+  save();
+  document.getElementById('aRankName').value='';
+  renderARankList();
+}
+
+function adminDelRank(deptId,rankId){
+  S.ranks[deptId]=S.ranks[deptId].filter(r=>r.id!==rankId);
+  save(); renderARankList();
+}
+
+function renderARankList(){
+  const el=document.getElementById('aRankList');
+  if(!el) return;
+  const deptId=v('aRankDept');
+  el.innerHTML=(S.ranks[deptId]||[]).sort((a,b)=>a.order-b.order).map(r=>`
+    <div class="list-row">
+      <div class="list-row-l">
+        <div>
+          <div class="list-row-name">${r.name}</div>
+          <div class="list-row-sub">Order: ${r.order} · ${(r.tier||'patrol').toUpperCase()}</div>
+        </div>
+      </div>
+      <div class="list-row-acts"><button class="btn-del" onclick="adminDelRank('${deptId}','${r.id}')">DELETE</button></div>
+    </div>`).join('');
+}
+
+function loadMemRanks(deptElId, rankElId){
+  const deptId=v(deptElId)||document.getElementById(deptElId)?.value;
+  const rankEl=document.getElementById(rankElId);
+  if(!rankEl) return;
+  rankEl.innerHTML=(S.ranks[deptId]||[]).sort((a,b)=>a.order-b.order).map(r=>`<option value="${r.name}">${r.name}</option>`).join('');
+}
+
+function adminAddMember(){
+  const name=v('aMemName').trim(),badge=v('aMemBadge').trim(),dept=v('aMemDept'),rank=v('aMemRank');
+  const date=v('aMemDate'),status=v('aMemStatus'),discord=v('aMemDiscord').trim();
+  if(!name||!dept||!rank){ alert('Name, department and rank required.'); return; }
+  S.members.push({id:'m'+uid(),name,badge,dept,rank,date,status,discord});
+  save();
+  document.getElementById('aMemName').value='';
+  document.getElementById('aMemBadge').value='';
+  document.getElementById('aMemDate').value='';
+  document.getElementById('aMemDiscord').value='';
+  renderAll();
+}
+
+function adminCreateUser(){
+  const username=v('aNewUser').trim().toLowerCase();
+  const password=v('aNewPass');
+  const displayName=v('aNewDisplay').trim();
+  const role=v('aNewRole');
+  const deptId=v('aNewDept');
+  if(!username||!password||!displayName){ alert('All fields required.'); return; }
+  if(S.users.find(u=>u.username===username)){ alert('Username already exists.'); return; }
+  S.users.push({username,password,displayName,role,deptId});
+  save();
+  document.getElementById('aNewUser').value='';
+  document.getElementById('aNewPass').value='';
+  document.getElementById('aNewDisplay').value='';
+  renderAUserList();
+}
+
+function adminDelUser(username){
+  if(username==='admin'){ alert('Cannot delete the admin account.'); return; }
+  if(!confirm('Delete user account?')) return;
+  S.users=S.users.filter(u=>u.username!==username);
+  save(); renderAUserList();
+}
+
+function adminChangeRole(username,role){
+  const u=S.users.find(x=>x.username===username);
+  if(u){ u.role=role; save(); }
+}
+
+function renderAUserList(){
+  const el=document.getElementById('aUserList');
+  if(!el) return;
+  el.innerHTML=S.users.map(u=>{
+    const dept=S.depts.find(d=>d.id===u.deptId);
+    return `<div class="list-row">
+      <div class="list-row-l">
+        <div>
+          <div class="list-row-name">${u.displayName} <span style="font-family:var(--mono);font-size:9px;color:var(--text3);">@${u.username}</span></div>
+          <div class="list-row-sub">${u.role.toUpperCase()} · ${dept?.abbr||u.deptId||'ALL'}</div>
+        </div>
+      </div>
+      <div class="list-row-acts">
+        <select class="usel" onchange="adminChangeRole('${u.username}',this.value)">
+          <option value="member" ${u.role==='member'?'selected':''}>Member</option>
+          <option value="hc" ${u.role==='hc'?'selected':''}>HC</option>
+          <option value="admin" ${u.role==='admin'?'selected':''}>Admin</option>
+        </select>
+        <button class="btn-del" onclick="adminDelUser('${u.username}')">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderAdminReqs(){
+  const el=document.getElementById('aAllReqList');
+  if(!el) return;
+  const all=[
+    ...S.loas.map(r=>({...r,_t:'loa'})),
+    ...S.movs.map(r=>({...r,_t:'mov'}))
+  ].sort((a,b)=>b.ts-a.ts);
+  if(!all.length){ el.innerHTML='<div class="empty">No requests submitted yet.</div>'; return; }
+  el.innerHTML='<div class="req-grid">'+all.map(r=>{
+    const d=S.depts.find(x=>x.id===(r.dept||r.deptFrom));
+    return `<div class="req-card">
+      <div class="req-card-body">
+        <div class="req-card-hdr">
+          <span class="rtag ${r._t==='loa'?'rt-loa':'rt-mov'}">${r._t==='loa'?'LOA':(r.type||'MOV').toUpperCase()}</span>
+          <span class="rtag rt-${r.status==='pending'?'pend':r.status==='approved'?'appr':'deni'}">${r.status.toUpperCase()}</span>
+        </div>
+        <div class="req-name">${r.name} — ${r.badge}</div>
+        <div class="req-meta">Dept: ${d?.abbr||'—'} · @${r.by} · ${new Date(r.ts).toLocaleString()}</div>
+      </div>
+      <div class="req-acts">
+        <button class="btn-appr" onclick="resolveReq('${r._t}','${r.id}','approved')">APPROVE</button>
+        <button class="btn-deny" onclick="resolveReq('${r._t}','${r.id}','denied')">DENY</button>
+        <button class="btn-del" onclick="delReq('${r._t}','${r.id}')">DEL</button>
+      </div>
+    </div>`;
+  }).join('')+'</div>';
+}
+
+// ════════════════════════════════════════════════════════
+//  GOOGLE SHEETS
+// ════════════════════════════════════════════════════════
+function saveSheetCfg(){
+  const url=document.getElementById('aSheetsUrl').value.trim();
+  const logo=document.getElementById('aLogoUrl').value.trim();
+  S.sheetsUrl=url;
+  if(logo){ S.logo=logo; save(); applyLogo(logo); }
+  else save();
+  const msg=document.getElementById('aSheetMsg');
+  if(url){ syncSheets(url,msg); }
+  else { msg.innerHTML='<span style="color:var(--text3)">No URL set — logo saved.</span>'; }
+}
+
+async function syncSheets(url,msgEl){
+  if(msgEl) msgEl.innerHTML='<span class="spinner"></span><span style="color:var(--text3)">SYNCING FROM GOOGLE SHEETS...</span>';
+  try{
+    const res=await fetch(url);
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const txt=await res.text();
+    const rows=parseCSV(txt);
+    if(rows.length<2) throw new Error('Sheet appears empty');
+    const imported=[];
+    for(let i=1;i<rows.length;i++){
+      const [name,badge,deptName,rank,date,status]=rows[i];
+      if(!name?.trim()) continue;
+      const dept=S.depts.find(d=>d.name.toLowerCase()===(deptName||'').trim().toLowerCase()||d.abbr.toLowerCase()===(deptName||'').trim().toLowerCase());
+      if(!dept) continue;
+      const st=['active','needs','inactive','loa'].includes((status||'').trim().toLowerCase())?(status||'active').trim().toLowerCase():'active';
+      imported.push({id:'gs'+i,name:name.trim(),badge:(badge||'').trim(),dept:dept.id,rank:(rank||'').trim(),date:(date||'').trim(),status:st,discord:''});
+    }
+    S.members=S.members.filter(m=>!m.id.startsWith('gs'));
+    S.members.push(...imported);
+    save(); renderAll();
+    if(msgEl) msgEl.innerHTML=`<span style="color:var(--green)">✓ SYNC COMPLETE — ${imported.length} records imported from Google Sheets</span>`;
+  } catch(e){
+    if(msgEl) msgEl.innerHTML=`<span style="color:var(--red)">✕ SYNC FAILED: ${e.message} — Check your sheet is published as CSV and the URL is correct.</span>`;
+  }
+}
+
+function parseCSV(txt){
+  return txt.trim().split('\n').map(line=>{
+    const r=[];let c='',q=false;
+    for(const ch of line){
+      if(ch==='"'){ q=!q; }
+      else if(ch===','&&!q){ r.push(c); c=''; }
+      else { c+=ch; }
+    }
+    r.push(c); return r;
+  });
+}
+
+// ════════════════════════════════════════════════════════
+//  HC PANEL
+// ════════════════════════════════════════════════════════
+function openHC(){
+  if(CU?.role!=='hc') return;
+  const dept=S.depts.find(d=>d.id===CU.deptId);
+  document.getElementById('hcDeptInfo').innerHTML=`<strong>Your Department:</strong> ${dept?.name||'Unknown'} (${dept?.abbr||'—'})<br>You can add/edit members and create login accounts for your department only. You cannot access other departments or create Admin accounts.`;
+  const rs=document.getElementById('hMemRank');
+  rs.innerHTML=(S.ranks[CU.deptId]||[]).sort((a,b)=>a.order-b.order).map(r=>`<option value="${r.name}">${r.name}</option>`).join('');
+  document.getElementById('modalHC').classList.add('open');
+  renderHCMemberList(); renderHCUserList(); renderHCReqs();
+}
+
+function hTab(t,btn){
+  document.querySelectorAll('#modalHC .mpanel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('#modalHC .mtab').forEach(b=>b.classList.remove('active'));
+  document.getElementById('hp-'+t).classList.add('active');
+  if(btn) btn.classList.add('active');
+  if(t==='hcreqs') renderHCReqs();
+}
+
+function hcAddMember(){
+  if(CU?.role!=='hc') return;
+  const name=v('hMemName').trim(),badge=v('hMemBadge').trim(),rank=v('hMemRank');
+  const status=v('hMemStatus'),date=v('hMemDate'),discord=v('hMemDiscord').trim();
+  if(!name||!rank){ alert('Name and rank required.'); return; }
+  S.members.push({id:'m'+uid(),name,badge,dept:CU.deptId,rank,date,status,discord});
+  save();
+  document.getElementById('hMemName').value='';
+  document.getElementById('hMemBadge').value='';
+  document.getElementById('hMemDate').value='';
+  document.getElementById('hMemDiscord').value='';
+  renderHCMemberList(); renderAll();
+}
+
+function hcDelMember(id){
+  if(!confirm('Remove member?')) return;
+  S.members=S.members.filter(m=>m.id!==id);
+  save(); renderHCMemberList(); renderAll();
+}
+
+function renderHCMemberList(){
+  const el=document.getElementById('hMemberList');
+  const dm=S.members.filter(m=>m.dept===CU?.deptId);
+  if(!dm.length){ el.innerHTML='<div class="empty">No members yet.</div>'; return; }
+  el.innerHTML=dm.map(m=>`
+    <div class="list-row">
+      <div class="list-row-l">
+        <div>
+          <div class="list-row-name">${m.name}</div>
+          <div class="list-row-sub">${m.badge} · ${m.rank} · ${m.status.toUpperCase()}</div>
+        </div>
+      </div>
+      <div class="list-row-acts">
+        <select class="usel" onchange="quickStatus('${m.id}',this.value)">
+          <option value="active" ${m.status==='active'?'selected':''}>Active</option>
+          <option value="needs" ${m.status==='needs'?'selected':''}>Needs Imprv.</option>
+          <option value="loa" ${m.status==='loa'?'selected':''}>LOA</option>
+          <option value="inactive" ${m.status==='inactive'?'selected':''}>Inactive</option>
+        </select>
+        <button class="btn-del" onclick="hcDelMember('${m.id}')">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+function hcCreateUser(){
+  if(CU?.role!=='hc') return;
+  const username=v('hNewUser').trim().toLowerCase();
+  const password=v('hNewPass');
+  const displayName=v('hNewDisplay').trim();
+  const role=v('hNewRole');
+  if(!username||!password||!displayName){ alert('All fields required.'); return; }
+  if(role==='admin'){ alert('HC cannot create Admin accounts.'); return; }
+  if(S.users.find(u=>u.username===username)){ alert('Username already exists.'); return; }
+  S.users.push({username,password,displayName,role,deptId:CU.deptId});
+  save();
+  document.getElementById('hNewUser').value='';
+  document.getElementById('hNewPass').value='';
+  document.getElementById('hNewDisplay').value='';
+  renderHCUserList();
+}
+
+function hcDelUser(username){
+  if(!confirm('Remove this user?')) return;
+  S.users=S.users.filter(u=>u.username!==username);
+  save(); renderHCUserList();
+}
+
+function renderHCUserList(){
+  const el=document.getElementById('hUserList');
+  const du=S.users.filter(u=>u.deptId===CU?.deptId&&u.role!=='admin'&&u.username!==CU?.username);
+  if(!du.length){ el.innerHTML='<div class="empty">No dept accounts created yet.</div>'; return; }
+  el.innerHTML=du.map(u=>`
+    <div class="list-row">
+      <div class="list-row-l">
+        <div>
+          <div class="list-row-name">${u.displayName} <span style="font-family:var(--mono);font-size:9px;color:var(--text3);">@${u.username}</span></div>
+          <div class="list-row-sub">${u.role.toUpperCase()}</div>
+        </div>
+      </div>
+      <div class="list-row-acts"><button class="btn-del" onclick="hcDelUser('${u.username}')">✕</button></div>
+    </div>`).join('');
+}
+
+function renderHCReqs(){
+  const el=document.getElementById('hReqList');
+  if(!el) return;
+  const all=[
+    ...S.loas.filter(r=>r.dept===CU?.deptId).map(r=>({...r,_t:'loa'})),
+    ...S.movs.filter(r=>r.deptFrom===CU?.deptId).map(r=>({...r,_t:'mov'}))
+  ].sort((a,b)=>b.ts-a.ts);
+  if(!all.length){ el.innerHTML='<div class="empty">No requests for your department.</div>'; return; }
+  el.innerHTML='<div class="req-grid">'+all.map(r=>`
+    <div class="req-card">
+      <div class="req-card-body">
+        <div class="req-card-hdr">
+          <span class="rtag ${r._t==='loa'?'rt-loa':'rt-mov'}">${r._t==='loa'?'LOA':(r.type||'MOV').toUpperCase()}</span>
+          <span class="rtag rt-${r.status==='pending'?'pend':r.status==='approved'?'appr':'deni'}">${r.status.toUpperCase()}</span>
+        </div>
+        <div class="req-name">${r.name} — ${r.badge}</div>
+        <div class="req-meta">
+          ${r._t==='loa'?`Period: ${fmtDate(r.start)} → ${fmtDate(r.end)}<br>`:`Type: ${r.type}<br>`}
+          Reason: ${r.reason||r.rankFrom||'—'}<br>
+          @${r.by} · ${new Date(r.ts).toLocaleString()}
+        </div>
+      </div>
+      <div class="req-acts">
+        <button class="btn-appr" onclick="resolveReq('${r._t}','${r.id}','approved')">APPROVE</button>
+        <button class="btn-deny" onclick="resolveReq('${r._t}','${r.id}','denied')">DENY</button>
+      </div>
+    </div>`).join('')+'</div>';
+}
+
+// ════════════════════════════════════════════════════════
+//  HELPERS
+// ════════════════════════════════════════════════════════
+function v(id){ const el=document.getElementById(id); return el?el.value:''; }
+
+function showMsg(el,type,text){
+  el.className='fmsg '+type;
+  el.textContent=text;
+  el.style.display='block';
+  setTimeout(()=>el.style.display='none',5000);
+}
+
+// ════════════════════════════════════════════════════════
+//  BOOT
+// ════════════════════════════════════════════════════════
+load();
+seed();
+if(S.logo) applyLogo(S.logo);
+</script>
+</body>
+</html>
