@@ -261,6 +261,41 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
   .dept-hdr{flex-direction:column;gap:1rem;}
   .dept-nums{justify-content:flex-start;}
 }
+
+/* ── GOOGLE SHEETS SYNC ── */
+.gs-header{display:flex;align-items:center;gap:.75rem;margin-bottom:1.25rem;padding-bottom:1rem;border-bottom:1px solid var(--border);}
+.gs-badge{font-family:var(--mono);font-size:9px;letter-spacing:2px;padding:3px 9px;border:1px solid;text-transform:uppercase;}
+.gs-badge.connected{color:var(--green);border-color:var(--green-dim);background:rgba(75,200,122,.07);}
+.gs-badge.disconnected{color:var(--text3);border-color:var(--border);}
+.gs-badge.syncing{color:var(--amber);border-color:var(--amber-dim);background:rgba(200,146,58,.07);animation:pulse 1.2s infinite;}
+.gs-badge.error{color:var(--red);border-color:var(--red-dim);background:rgba(200,75,75,.07);}
+.gs-sheet-row{display:grid;grid-template-columns:1fr 1fr auto;gap:.75rem;align-items:end;margin-bottom:.75rem;}
+.gs-map-grid{display:grid;grid-template-columns:1fr auto 1fr;gap:.5rem;align-items:center;margin-bottom:.4rem;font-family:var(--mono);font-size:10px;}
+.gs-map-arrow{color:var(--text3);text-align:center;font-size:12px;}
+.gs-map-field{color:var(--accent);background:var(--surface);border:1px solid var(--border);padding:3px 8px;letter-spacing:1px;}
+.sync-log-entry{font-family:var(--mono);font-size:10px;padding:6px 10px;border-left:3px solid var(--border);margin-bottom:3px;background:var(--surface);letter-spacing:.5px;line-height:1.7;}
+.sync-log-entry.ok{border-left-color:var(--green);}
+.sync-log-entry.warn{border-left-color:var(--amber);}
+.sync-log-entry.err{border-left-color:var(--red);}
+.sync-log-entry.info{border-left-color:var(--accent);}
+.sync-log-time{color:var(--text3);margin-right:.5rem;}
+.field-map-row{display:grid;grid-template-columns:140px 24px 1fr auto;gap:.5rem;align-items:center;margin-bottom:.4rem;}
+.field-map-label{font-family:var(--mono);font-size:10px;color:var(--text2);letter-spacing:1px;text-align:right;padding-right:.5rem;border-right:1px solid var(--border);}
+.field-map-arrow{color:var(--text3);text-align:center;}
+.health-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:.75rem;margin-bottom:1.5rem;}
+.health-card{background:var(--surface);border:1px solid var(--border);padding:.75rem 1rem;}
+.health-card-val{font-family:var(--head);font-size:28px;letter-spacing:2px;line-height:1;}
+.health-card-lbl{font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-top:2px;}
+.conflict-row{background:var(--surface);border:1px solid var(--amber-dim);padding:.75rem 1rem;margin-bottom:.5rem;font-family:var(--mono);font-size:10px;}
+.conflict-row-hdr{display:flex;justify-content:space-between;margin-bottom:.5rem;}
+.conflict-field{display:grid;grid-template-columns:100px 1fr 1fr auto;gap:.5rem;align-items:center;margin-bottom:.3rem;font-size:9px;}
+.cv-db{color:var(--accent);}
+.cv-sheet{color:var(--amber);}
+.btn-resolve{font-family:var(--mono);font-size:9px;padding:2px 8px;border:1px solid;cursor:pointer;transition:all .15s;background:transparent;text-transform:uppercase;}
+.btn-resolve.keep-db{color:var(--accent);border-color:var(--accent-dim);}.btn-resolve.keep-db:hover{background:var(--accent-dim);}
+.btn-resolve.use-sheet{color:var(--amber);border-color:var(--amber-dim);}.btn-resolve.use-sheet:hover{background:var(--amber-dim);}
+.progress-bar{height:3px;background:var(--border);border-radius:2px;overflow:hidden;margin-top:.5rem;}
+.progress-fill{height:100%;background:var(--accent);transition:width .3s ease;}
 </style>
 </head>
 <body>
@@ -278,8 +313,8 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
       <strong>SQL to run in Supabase SQL Editor:</strong>
     </div>
     <textarea class="fta" style="font-size:10px;min-height:160px;margin-bottom:1rem;color:var(--gold);" readonly id="setupSQL"></textarea>
-    <div class="fg"><label class="fl">Supabase Project URL</label><input class="fi" id="sbUrl" placeholder="https://usoibvfenklsidyzsuty.supabase.co"></div>
-    <div class="fg"><label class="fl">Supabase Anon/Public Key</label><input class="fi" id="sbKey" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVzb2lidmZlbmtsc2lkeXpzdXR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyOTU5NTAsImV4cCI6MjA5Mzg3MTk1MH0.CSpQZKG20pXs92rmespKUH5lEDJa5rA8ywI23dwk1tM..."></div>
+    <div class="fg"><label class="fl">Supabase Project URL</label><input class="fi" id="sbUrl" placeholder="https://xxxxxxxxxxxxxxxxxxxx.supabase.co"></div>
+    <div class="fg"><label class="fl">Supabase Anon/Public Key</label><input class="fi" id="sbKey" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."></div>
     <div class="login-err" id="setupErr" style="display:none;"></div>
     <button class="fbtn" style="width:100%;margin-top:.5rem;" onclick="connectSupabase()">▶ CONNECT &amp; CONTINUE</button>
   </div>
@@ -337,6 +372,10 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
         <button class="mtab" onclick="aTab('users',this)">User Accounts</button>
         <button class="mtab" onclick="aTab('pending',this)">Pending <span class="pending-ct" id="adminPendingCt" style="display:none;">0</span></button>
         <button class="mtab" onclick="aTab('allreq',this)">All Requests</button>
+        <button class="mtab" style="color:#34a853;" onclick="aTab('sheets',this)">📊 Google Sheets</button>
+        <button class="mtab" style="color:#fbbc04;" onclick="aTab('synclog',this)">📋 Sync Logs</button>
+        <button class="mtab" style="color:#ea4335;" onclick="aTab('conflicts',this)">⚠ Conflicts <span class="pending-ct" id="conflictCt" style="display:none;">0</span></button>
+        <button class="mtab" onclick="aTab('health',this)">💊 Health</button>
       </div>
       <div class="mpanel active" id="ap-depts">
         <div class="frow">
@@ -446,6 +485,110 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
       <div class="mpanel" id="ap-allreq">
         <div id="aAllReqList"><div class="empty">No requests yet.</div></div>
       </div>
+
+      <!-- ═══ GOOGLE SHEETS PANEL ═══ -->
+      <div class="mpanel" id="ap-sheets">
+        <div class="gs-header">
+          <span style="font-family:var(--head);font-size:20px;letter-spacing:3px;color:#34a853;">📊 GOOGLE SHEETS SYNC</span>
+          <span class="gs-badge disconnected" id="gsGlobalStatus">NOT CONFIGURED</span>
+          <button class="fbtn" style="margin:0;padding:6px 14px;font-size:10px;background:rgba(52,168,83,.1);border-color:#34a853;color:#34a853;" onclick="runGlobalSync()">▶ SYNC ALL NOW</button>
+        </div>
+
+        <div class="infobox" style="border-color:rgba(52,168,83,.3);background:rgba(52,168,83,.04);">
+          <strong style="color:#34a853;">SETUP — Google Apps Script Proxy</strong><br>
+          Because this app runs in a browser, direct Sheets API calls require OAuth. Instead, deploy a lightweight <strong>Google Apps Script Web App</strong> per department that acts as a read/write proxy — no OAuth popup needed for read operations, and write operations (promotions only) go through it too.<br><br>
+          <strong>Deploy steps:</strong> Open Google Sheets → Extensions → Apps Script → paste the proxy script → Deploy as Web App → set "Anyone" access → copy the URL below.
+        </div>
+
+        <div style="margin-bottom:1.5rem;">
+          <div style="font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:.75rem;">DEPARTMENT SHEET CONFIGURATIONS</div>
+          <div id="gsSheetList"><div class="empty">No departments configured yet. Add one below.</div></div>
+        </div>
+
+        <div style="background:var(--bg3);border:1px solid var(--border);padding:1.25rem;margin-bottom:1.25rem;">
+          <div style="font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--text2);text-transform:uppercase;margin-bottom:1rem;">ADD / EDIT DEPARTMENT SHEET</div>
+          <div class="frow">
+            <div class="fg"><label class="fl">Department</label><select class="fs" id="gsDeptSel"></select></div>
+            <div class="fg"><label class="fl">Sheet Role</label>
+              <select class="fs" id="gsSheetRole">
+                <option value="dept">Department Roster</option>
+                <option value="main">Main Roster (Org-Wide)</option>
+                <option value="empdb">Employee Database</option>
+              </select>
+            </div>
+          </div>
+          <div class="fg"><label class="fl">Google Apps Script Web App URL</label>
+            <input class="fi" id="gsScriptUrl" placeholder="https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec" style="font-size:11px;">
+          </div>
+          <div class="fg"><label class="fl">Tab / Sheet Name (exact, case-sensitive)</label>
+            <input class="fi" id="gsTabName" placeholder="e.g. SAHP Roster">
+          </div>
+          <div class="fg"><label class="fl">Header Row Number (usually 1)</label>
+            <input class="fi" id="gsHeaderRow" type="number" value="1" min="1">
+          </div>
+          <div style="display:flex;gap:.75rem;flex-wrap:wrap;">
+            <button class="fbtn" style="margin:0;" onclick="gsSaveSheet()">💾 SAVE SHEET CONFIG</button>
+            <button class="fbtn" style="margin:0;background:transparent;border-color:var(--border2);color:var(--text2);" onclick="gsTestSheet()">▶ TEST CONNECTION</button>
+          </div>
+          <div class="fmsg" id="gsSheetMsg"></div>
+        </div>
+
+        <div style="background:var(--bg3);border:1px solid var(--border);padding:1.25rem;">
+          <div style="font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--text2);text-transform:uppercase;margin-bottom:1rem;">COLUMN FIELD MAPPING — <span id="gsMapDeptName" style="color:var(--accent);">SELECT DEPARTMENT ABOVE</span></div>
+          <div class="infobox" style="margin-bottom:1rem;font-size:10px;">
+            Map your sheet's column headers to the standard FUDT fields. Leave blank to skip a field. Case-insensitive matching — "Call Sign", "callsign", "CS" all work if you map them here.
+          </div>
+          <div id="gsFieldMapper"><div class="empty">Save a sheet config first to enable field mapping.</div></div>
+          <button class="fbtn gold" style="margin-top:.75rem;" onclick="gsSaveMapping()">💾 SAVE FIELD MAP</button>
+          <div class="fmsg" id="gsMappingMsg"></div>
+        </div>
+
+        <div style="background:var(--bg3);border:1px solid var(--border);padding:1.25rem;margin-top:1.25rem;">
+          <div style="font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--text2);text-transform:uppercase;margin-bottom:.75rem;">📋 GOOGLE APPS SCRIPT PROXY TEMPLATE</div>
+          <div style="font-family:var(--mono);font-size:9px;color:var(--text3);line-height:2;margin-bottom:.75rem;">
+            Deploy this script in each department's Google Sheet → Extensions → Apps Script → paste → Deploy as Web App (Anyone).
+          </div>
+          <textarea class="fta" style="font-size:10px;min-height:180px;color:var(--gold);margin-bottom:.75rem;" readonly id="gasTemplate"></textarea>
+          <button class="fbtn" style="margin:0;padding:6px 14px;font-size:10px;" onclick="copyGAS()">📋 COPY SCRIPT</button>
+          <div class="fmsg" id="gasMsg"></div>
+        </div>
+      </div>
+
+      <!-- ═══ SYNC LOG PANEL ═══ -->
+      <div class="mpanel" id="ap-synclog">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;">
+          <span style="font-family:var(--head);font-size:20px;letter-spacing:3px;color:var(--accent);">📋 SYNC LOG</span>
+          <div style="display:flex;gap:.5rem;">
+            <button class="fbtn" style="margin:0;padding:6px 14px;font-size:10px;" onclick="runGlobalSync()">▶ FORCE SYNC</button>
+            <button class="fbtn red" style="margin:0;padding:6px 14px;font-size:10px;" onclick="clearSyncLog()">CLEAR LOG</button>
+          </div>
+        </div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text3);margin-bottom:.75rem;" id="syncLogMeta">No syncs run yet.</div>
+        <div id="syncLogList"><div class="empty">No log entries.</div></div>
+      </div>
+
+      <!-- ═══ CONFLICTS PANEL ═══ -->
+      <div class="mpanel" id="ap-conflicts">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;">
+          <span style="font-family:var(--head);font-size:20px;letter-spacing:3px;color:var(--amber);">⚠ DATA CONFLICTS</span>
+          <button class="fbtn" style="margin:0;padding:6px 14px;font-size:10px;" onclick="renderConflicts()">REFRESH</button>
+        </div>
+        <div class="infobox" style="border-color:var(--amber-dim);background:rgba(200,146,58,.04);">
+          Conflicts occur when Google Sheets data differs from the Employee Database. <strong>Employee Database always wins</strong> unless you manually choose to apply the sheet value. Write-protected fields (LOA, Status, Termination) can never be overwritten from sheets.
+        </div>
+        <div id="conflictList"><div class="empty">No conflicts detected.</div></div>
+      </div>
+
+      <!-- ═══ HEALTH PANEL ═══ -->
+      <div class="mpanel" id="ap-health">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;">
+          <span style="font-family:var(--head);font-size:20px;letter-spacing:3px;color:var(--green);">💊 ROSTER HEALTH</span>
+          <button class="fbtn green" style="margin:0;padding:6px 14px;font-size:10px;" onclick="renderHealth()">REFRESH</button>
+        </div>
+        <div class="health-grid" id="healthGrid"></div>
+        <div style="font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:.75rem;">DEPARTMENT BREAKDOWN</div>
+        <div id="healthDeptBreakdown"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -462,6 +605,7 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
         <button class="mtab gold active" onclick="hTab('roster',this)">Edit Roster</button>
         <button class="mtab gold" onclick="hTab('pending',this)">Pending <span class="pending-ct" id="hcPendingCt" style="display:none;">0</span></button>
         <button class="mtab gold" id="hcReqTab" onclick="hTab('hcreqs',this)">Dept Requests <span class="pending-ct" id="hcReqCt" style="display:none;">0</span></button>
+        <button class="mtab" style="color:#5865F2;border-bottom-color:transparent;" id="hcWebhookTab" onclick="hTab('webhook',this)">🔔 Discord Webhook</button>
       </div>
       <div class="mpanel active" id="hp-roster">
         <div class="infobox" id="hcDeptInfo">Loading your department...</div>
@@ -493,6 +637,46 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
       </div>
       <div class="mpanel" id="hp-hcreqs">
         <div id="hReqList"><div class="empty">No requests for your department yet.</div></div>
+      </div>
+      <div class="mpanel" id="hp-webhook">
+        <div class="infobox" style="border-color:#5865F244;background:rgba(88,101,242,.05);">
+          <strong style="color:#5865F2;">🔔 DISCORD WEBHOOK — MOVEMENTS CHANNEL</strong><br>
+          Paste your Discord channel webhook URL below. Whenever a member's status changes or a movement/LOA request is approved or denied, this tool will automatically post a formatted embed to that channel.
+        </div>
+        <div class="fg">
+          <label class="fl">Discord Webhook URL</label>
+          <input class="fi" id="hcWebhookUrl" placeholder="https://discord.com/api/webhooks/..." style="font-size:11px;">
+        </div>
+        <div class="fg">
+          <label class="fl">Bot Display Name (optional)</label>
+          <input class="fi" id="hcWebhookName" placeholder="Department Tracker" value="Department Tracker">
+        </div>
+        <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;margin-bottom:1rem;">
+          <button class="fbtn" style="background:rgba(88,101,242,.15);border-color:#5865F2;color:#5865F2;margin-top:0;" onclick="saveWebhook()">💾 SAVE WEBHOOK</button>
+          <button class="fbtn" style="background:transparent;border-color:var(--border2);color:var(--text2);margin-top:0;" onclick="testWebhook()">▶ SEND TEST</button>
+          <button class="fbtn red" style="margin-top:0;" onclick="clearWebhook()">✕ CLEAR</button>
+        </div>
+        <div class="fmsg" id="webhookMsg"></div>
+        <div style="margin-top:1.5rem;padding-top:1.5rem;border-top:1px solid var(--border);">
+          <div style="font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:.75rem;">What triggers a post:</div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--text3);line-height:2.2;">
+            🟢 Member status changed → Active<br>
+            🟡 Member status changed → Needs Improvement<br>
+            🔵 Member status changed → LOA<br>
+            ⚫ Member status changed → Inactive<br>
+            ✅ LOA / Movement Request <strong style="color:var(--green);">Approved</strong><br>
+            ❌ LOA / Movement Request <strong style="color:var(--red);">Denied</strong>
+          </div>
+        </div>
+        <div style="margin-top:1.25rem;padding:1rem;border:1px solid var(--border);background:var(--surface);">
+          <div style="font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:.5rem;">How to get your webhook URL:</div>
+          <div style="font-family:var(--mono);font-size:10px;color:var(--text3);line-height:2.2;">
+            1. Open Discord → go to your movements channel<br>
+            2. Click ⚙ Edit Channel → Integrations → Webhooks<br>
+            3. Click <strong style="color:var(--text2);">New Webhook</strong> → name it → Copy Webhook URL<br>
+            4. Paste it above and click Save
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -620,15 +804,29 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
 
 <script>
 // ════════════════════════════════════════════════════════
-//  CONFIG STORAGE
+//  CONFIG — credentials baked in, no setup screen needed
 // ════════════════════════════════════════════════════════
-const CFG_KEY = 'fudt_sb_config';
+const _SB_URL = 'https://usoibvfenklsidyzsuty.supabase.co';
+const _SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVzb2lidmZlbmtsc2lkeXpzdXR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyOTU5NTAsImV4cCI6MjA5Mzg3MTk1MH0.CSpQZKG20pXs92rmespKUH5lEDJa5rA8ywI23dwk1tM';
 
-function loadConfig(){
-  try{ return JSON.parse(localStorage.getItem(CFG_KEY)||'null'); }catch(e){ return null; }
+// Legacy helpers kept for any residual references
+const CFG_KEY = 'fudt_sb_config';
+function loadConfig(){ return {url:_SB_URL, key:_SB_KEY}; }
+function saveConfig(url, key){ /* no-op — credentials are baked in */ }
+
+// ════════════════════════════════════════════════════════
+//  PERSISTENT SESSION STORAGE
+// ════════════════════════════════════════════════════════
+const SESSION_KEY = 'fudt_session';
+
+function saveSession(user){
+  try{ localStorage.setItem(SESSION_KEY, JSON.stringify(user)); }catch(e){}
 }
-function saveConfig(url, key){
-  localStorage.setItem(CFG_KEY, JSON.stringify({url,key}));
+function loadSession(){
+  try{ return JSON.parse(localStorage.getItem(SESSION_KEY)||'null'); }catch(e){ return null; }
+}
+function clearSession(){
+  try{ localStorage.removeItem(SESSION_KEY); }catch(e){}
 }
 
 // ════════════════════════════════════════════════════════
@@ -769,13 +967,13 @@ async function connectSupabase(){
     await loadAll();
     await seed();
   } catch(e){
-    showErr('Connection failed: ' + e.message + '. Did you run the SQL above?');
-    setSyncStatus('err','CONNECTION FAILED');
+    // credentials baked in, keep going
+    setSyncStatus('err','CONNECTION ERROR: '+e.message);
   }
 }
 
 function initFromConfig(cfg){
-  SB = supabase.createClient(cfg.url, cfg.key);
+  SB = supabase.createClient(_SB_URL, _SB_KEY);
 }
 
 // ════════════════════════════════════════════════════════
@@ -1090,6 +1288,7 @@ async function doLogin(){
     }
     const u_row = users[0];
     CU = {id:u_row.id,username:u_row.username,password:u_row.password,displayName:u_row.display_name,role:u_row.role,deptId:u_row.dept_id};
+    saveSession(CU); // persist session across reloads
 
     await loadAll();
     document.getElementById('loginOverlay').style.display='none';
@@ -1100,6 +1299,7 @@ async function doLogin(){
     renderAll();
     populateAllFormDepts();
     startRealtime();
+    startAutoSync();
     updateCommandNotifs(S.loas.filter(r=>r.status==='pending').length+S.movs.filter(r=>r.status==='pending').length);
     updatePendingBadges();
     setSyncStatus('ok','LIVE · Supabase realtime');
@@ -1114,6 +1314,7 @@ document.getElementById('loginUser').addEventListener('keydown',e=>{ if(e.key===
 
 function doSignout(){
   stopRealtime();
+  clearSession();
   CU=null; AD=null;
   document.getElementById('appWrap').style.display='none';
   document.getElementById('loginOverlay').style.display='flex';
@@ -1275,7 +1476,11 @@ function toggleRankSec(hdr){ hdr.classList.toggle('col'); hdr.nextElementSibling
 
 async function quickStatus(id, val){
   await dbUpdate('fudt_members', id, {status:val, updated_at: new Date().toISOString()});
-  const m=S.members.find(x=>x.id===id); if(m) m.status=val;
+  const m=S.members.find(x=>x.id===id);
+  if(m){
+    m.status=val;
+    discordPostStatusChange(m, val); // fire-and-forget
+  }
   buildSidebar();
 }
 
@@ -1413,7 +1618,11 @@ function renderMyMovs(){
 async function resolveReq(table, id, status){
   await dbUpdate('fudt_'+table, id, {status});
   const list = table==='loas'?S.loas:S.movs;
-  const r=list.find(x=>x.id===id); if(r) r.status=status;
+  const r=list.find(x=>x.id===id);
+  if(r){
+    r.status=status;
+    discordPostRequestResolved(table, r, status); // fire-and-forget
+  }
   if(table==='loas'){ renderMyLoas(); renderAdminReqs(); renderHCReqs(); }
   else { renderMyMovs(); renderAdminReqs(); renderHCReqs(); }
   updateCommandNotifs(S.loas.filter(r=>r.status==='pending').length+S.movs.filter(r=>r.status==='pending').length);
@@ -1450,6 +1659,14 @@ function aTab(t,btn){
   if(t==='allreq') renderAdminReqs();
   if(t==='users'){ renderAUserList(); populateAdminSelects(); }
   if(t==='pending'){ renderPendingList('aPendingList',true); updatePendingBadges(); }
+  if(t==='sheets'){
+    loadGSData(); populateGSDeptSel(); renderGSSheetList(); renderGSFieldMapper(v('gsDeptSel'));
+    const gasEl = document.getElementById('gasTemplate');
+    if(gasEl) gasEl.value = GAS_TEMPLATE;
+  }
+  if(t==='synclog'){ loadGSData(); renderSyncLog(); }
+  if(t==='conflicts'){ loadGSData(); renderConflicts(); }
+  if(t==='health'){ renderHealth(); }
 }
 
 function populateAdminSelects(){
@@ -1465,6 +1682,21 @@ document.getElementById('colorGrid').addEventListener('click',e=>{
   const dot=e.target.closest('.color-dot'); if(!dot) return;
   document.querySelectorAll('.color-dot').forEach(d=>d.classList.remove('sel'));
   dot.classList.add('sel'); CC=dot.dataset.c;
+});
+
+// Google Sheets dept select change — re-render field mapper
+document.addEventListener('change', e=>{
+  if(e.target && e.target.id === 'gsDeptSel'){
+    const deptId = e.target.value;
+    renderGSFieldMapper(deptId);
+    const cfg = GS_CONFIGS[deptId];
+    if(cfg){
+      document.getElementById('gsScriptUrl').value = cfg.url||'';
+      document.getElementById('gsTabName').value   = cfg.tab||'';
+      document.getElementById('gsHeaderRow').value = cfg.headerRow||1;
+      document.getElementById('gsSheetRole').value = cfg.role||'dept';
+    }
+  }
 });
 
 async function adminAddDept(){
@@ -1703,6 +1935,7 @@ function hTab(t,btn){
   if(btn) btn.classList.add('active');
   if(t==='hcreqs') renderHCReqs();
   if(t==='pending'){ renderPendingList('hPendingList',false); updatePendingBadges(); }
+  if(t==='webhook') loadWebhookUI();
 }
 
 async function hcAddMember(){
@@ -1768,6 +2001,789 @@ function renderHCReqs(){
 }
 
 // ════════════════════════════════════════════════════════
+//  DISCORD WEBHOOK SYSTEM
+// ════════════════════════════════════════════════════════
+const WH_KEY = 'fudt_discord_webhook';
+
+function getWebhook(){
+  try{ return JSON.parse(localStorage.getItem(WH_KEY)||'null'); }catch(e){ return null; }
+}
+function storeWebhook(url, name){
+  localStorage.setItem(WH_KEY, JSON.stringify({url, name}));
+}
+
+function saveWebhook(){
+  const url = document.getElementById('hcWebhookUrl')?.value.trim();
+  const name = document.getElementById('hcWebhookName')?.value.trim() || 'Department Tracker';
+  const msg = document.getElementById('webhookMsg');
+  if(!url){ showMsg(msg,'err','⚠ Please enter a webhook URL.'); return; }
+  if(!url.startsWith('https://discord.com/api/webhooks/')){ showMsg(msg,'err','⚠ Must be a valid Discord webhook URL.'); return; }
+  storeWebhook(url, name);
+  showMsg(msg,'ok','✓ Webhook saved. Status changes will now post to Discord.');
+}
+
+function clearWebhook(){
+  localStorage.removeItem(WH_KEY);
+  const msg = document.getElementById('webhookMsg');
+  if(document.getElementById('hcWebhookUrl')) document.getElementById('hcWebhookUrl').value = '';
+  showMsg(msg,'ok','Webhook cleared.');
+}
+
+async function testWebhook(){
+  const url = document.getElementById('hcWebhookUrl')?.value.trim();
+  const name = document.getElementById('hcWebhookName')?.value.trim() || 'Department Tracker';
+  const msg = document.getElementById('webhookMsg');
+  if(!url){ showMsg(msg,'err','⚠ Enter and save a webhook URL first.'); return; }
+  if(!url.startsWith('https://discord.com/api/webhooks/')){ showMsg(msg,'err','⚠ Invalid webhook URL.'); return; }
+  showMsg(msg,'ok','Sending test message...');
+  const dept = S.depts.find(d=>d.id===CU?.deptId);
+  const ok = await sendDiscordEmbed(url, name, {
+    title: '🔔 Webhook Test — Connection Successful',
+    description: `This is a test message from **${dept?.name||'Your Department'}** Tracker.\nStatus change notifications are now active.`,
+    color: 0x5865F2,
+    fields: [
+      { name: 'Posted by', value: CU?.displayName||'HC User', inline: true },
+      { name: 'Department', value: dept?.abbr||'—', inline: true },
+    ],
+    footer: { text: 'FUDT · Department Toolkit' },
+    timestamp: new Date().toISOString()
+  });
+  if(ok) showMsg(msg,'ok','✓ Test message sent to Discord!');
+  else showMsg(msg,'err','⚠ Failed to send. Double-check the webhook URL and try again.');
+}
+
+async function sendDiscordEmbed(url, botName, embed){
+  try{
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: botName, embeds: [embed] })
+    });
+    return res.ok || res.status === 204;
+  } catch(e){ console.warn('Discord webhook error:', e); return false; }
+}
+
+// Color codes for embed sidebar
+const STATUS_COLORS = { active: 0x4bc87a, needs: 0xc8923a, loa: 0x4b8ac8, inactive: 0x555577 };
+const STATUS_LABELS = { active: '🟢 ACTIVE', needs: '🟡 NEEDS IMPROVEMENT', loa: '🔵 LOA', inactive: '⚫ INACTIVE' };
+
+async function discordPostStatusChange(member, newStatus){
+  const wh = getWebhook(); if(!wh) return;
+  const dept = S.depts.find(d=>d.id===member.dept);
+  const color = STATUS_COLORS[newStatus] || 0x888888;
+  const label = STATUS_LABELS[newStatus] || newStatus.toUpperCase();
+  await sendDiscordEmbed(wh.url, wh.name, {
+    title: `📋 Roster Status Change`,
+    color,
+    fields: [
+      { name: 'Personnel', value: `**${member.name}**${member.badge?' · '+member.badge:''}`, inline: false },
+      { name: 'Department', value: dept?.name||member.dept, inline: true },
+      { name: 'Rank', value: member.rank||'—', inline: true },
+      { name: 'New Status', value: label, inline: false },
+      { name: 'Updated by', value: CU?.displayName||'Staff', inline: true },
+    ],
+    footer: { text: 'FUDT Department Toolkit' },
+    timestamp: new Date().toISOString()
+  });
+}
+
+async function discordPostRequestResolved(type, req, status){
+  const wh = getWebhook(); if(!wh) return;
+  const color = status === 'approved' ? 0x4bc87a : 0xc84b4b;
+  const icon  = status === 'approved' ? '✅' : '❌';
+  const typeLabel = type === 'loas' ? 'LOA Request' : `Roster Movement — ${(req.type||'transfer').toUpperCase()}`;
+  const dept = S.depts.find(d=>d.id===(req.dept||req.deptFrom));
+  const fields = [
+    { name: 'Personnel', value: `**${req.name}**${req.badge?' · '+req.badge:''}`, inline: false },
+    { name: 'Department', value: dept?.name||req.dept||req.deptFrom||'—', inline: true },
+    { name: 'Decision', value: status === 'approved' ? '✅ APPROVED' : '❌ DENIED', inline: true },
+  ];
+  if(type === 'loas'){
+    fields.push({ name: 'LOA Period', value: `${req.start||'?'} → ${req.end||'?'}`, inline: false });
+    if(req.reason) fields.push({ name: 'Reason', value: req.reason, inline: false });
+  } else {
+    if(req.rankFrom) fields.push({ name: 'From Rank', value: req.rankFrom, inline: true });
+    if(req.rankTo)   fields.push({ name: 'To Rank',   value: req.rankTo,   inline: true });
+    if(req.deptTo && req.deptTo !== req.deptFrom){
+      const dTo = S.depts.find(d=>d.id===req.deptTo);
+      fields.push({ name: 'Transfer To', value: dTo?.name||req.deptTo, inline: false });
+    }
+    if(req.reason) fields.push({ name: 'Reason', value: req.reason, inline: false });
+  }
+  fields.push({ name: 'Actioned by', value: CU?.displayName||'Staff', inline: true });
+  await sendDiscordEmbed(wh.url, wh.name, {
+    title: `${icon} ${typeLabel}`,
+    color,
+    fields,
+    footer: { text: 'FUDT Department Toolkit' },
+    timestamp: new Date().toISOString()
+  });
+}
+
+// Load saved webhook into the HC panel when it opens
+function loadWebhookUI(){
+  const wh = getWebhook();
+  const urlEl = document.getElementById('hcWebhookUrl');
+  const nameEl = document.getElementById('hcWebhookName');
+  if(urlEl && wh?.url) urlEl.value = wh.url;
+  if(nameEl && wh?.name) nameEl.value = wh.name;
+}
+
+// ════════════════════════════════════════════════════════
+//  GOOGLE SHEETS SYNC ENGINE
+// ════════════════════════════════════════════════════════
+
+// ── Standard field names ──
+const GS_FIELDS = [
+  { key:'name',        label:'Name',               writable:true,  promotionOnly:false },
+  { key:'discord',     label:'Discord ID',          writable:true,  promotionOnly:false },
+  { key:'badge',       label:'Callsign / Paygrade', writable:true,  promotionOnly:false },
+  { key:'rank',        label:'Actual Rank',         writable:true,  promotionOnly:true  },
+  { key:'status',      label:'Status',              writable:false, promotionOnly:false }, // DB only
+  { key:'timezone',    label:'Time Zone',           writable:false, promotionOnly:false }, // DB only
+  { key:'loa',         label:'LOA',                 writable:false, promotionOnly:false }, // DB only
+  { key:'resigned',    label:'Resigned',            writable:false, promotionOnly:false }, // DB only
+  { key:'terminated',  label:'Terminated',          writable:false, promotionOnly:false }, // DB only
+  { key:'join_date',   label:'Hire Date',           writable:true,  promotionOnly:false },
+  { key:'mov_date',    label:'Mov. Date',            writable:true,  promotionOnly:false },
+  { key:'time_in_rank',label:'Time in Rank',        writable:true,  promotionOnly:false },
+  { key:'time_in_dept',label:'Time in Department',  writable:true,  promotionOnly:false },
+  { key:'time_roster', label:'Time on Roster',      writable:true,  promotionOnly:false },
+];
+
+// Fields the Main Roster write is BLOCKED for (website never edits these on main roster)
+const MAIN_ROSTER_BLOCKED = ['loa','resigned','terminated','status','timezone'];
+// Only these are allowed to write back to main roster
+const MAIN_ROSTER_ALLOWED = ['rank','badge'];
+
+// ── Storage keys ──
+const GS_CONFIG_KEY  = 'fudt_gs_configs';   // { deptId: { url, tab, headerRow, role } }
+const GS_MAPPING_KEY = 'fudt_gs_mappings';  // { deptId: { fieldKey: 'Sheet Column Header' } }
+const GS_LOG_KEY     = 'fudt_sync_log';
+const GS_CONFLICT_KEY= 'fudt_conflicts';
+
+let GS_CONFIGS  = {};
+let GS_MAPPINGS = {};
+let GS_SYNC_LOG = [];
+let GS_CONFLICTS= [];
+
+function loadGSData(){
+  try{ GS_CONFIGS   = JSON.parse(localStorage.getItem(GS_CONFIG_KEY) ||'{}'); }catch(e){ GS_CONFIGS={}; }
+  try{ GS_MAPPINGS  = JSON.parse(localStorage.getItem(GS_MAPPING_KEY)||'{}'); }catch(e){ GS_MAPPINGS={}; }
+  try{ GS_SYNC_LOG  = JSON.parse(localStorage.getItem(GS_LOG_KEY)    ||'[]'); }catch(e){ GS_SYNC_LOG=[]; }
+  try{ GS_CONFLICTS = JSON.parse(localStorage.getItem(GS_CONFLICT_KEY)||'[]'); }catch(e){ GS_CONFLICTS=[]; }
+}
+function saveGSConfigs(){ localStorage.setItem(GS_CONFIG_KEY,  JSON.stringify(GS_CONFIGS));  }
+function saveGSMappings(){ localStorage.setItem(GS_MAPPING_KEY, JSON.stringify(GS_MAPPINGS)); }
+function saveGSLog(){     localStorage.setItem(GS_LOG_KEY,     JSON.stringify(GS_SYNC_LOG.slice(-200))); }
+function saveConflicts(){ localStorage.setItem(GS_CONFLICT_KEY,JSON.stringify(GS_CONFLICTS)); }
+
+function gsLog(level, msg, dept=''){
+  const entry = { ts: Date.now(), level, msg, dept };
+  GS_SYNC_LOG.unshift(entry);
+  if(GS_SYNC_LOG.length > 200) GS_SYNC_LOG.pop();
+  saveGSLog();
+}
+
+// ── Apps Script proxy fetch ──
+// Your GAS web app must return JSON: { headers: [...], rows: [[...]] }
+// For writes it accepts POST with { action:'write', row:N, col:'Header', value:'...' }
+async function gsFetch(url, tab, headerRow=1){
+  const endpoint = `${url}?tab=${encodeURIComponent(tab)}&headerRow=${headerRow}&_=${Date.now()}`;
+  const res = await fetch(endpoint);
+  if(!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json();
+  if(data.error) throw new Error(data.error);
+  return data; // { headers:[], rows:[[]] }
+}
+
+async function gsWrite(url, tab, rowIndex, colHeader, value){
+  const res = await fetch(url, {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ action:'write', tab, row: rowIndex, col: colHeader, value })
+  });
+  if(!res.ok) throw new Error(`Write HTTP ${res.status}`);
+  return await res.json();
+}
+
+// ── Field detection: find column index by trying aliases ──
+function detectColumn(headers, fieldKey, customMapping){
+  // 1. Use custom mapping first
+  if(customMapping && customMapping[fieldKey]){
+    const mapped = customMapping[fieldKey].toLowerCase().trim();
+    const idx = headers.findIndex(h=>(h||'').toLowerCase().trim()===mapped);
+    if(idx>=0) return idx;
+  }
+  // 2. Auto-detect by common aliases
+  const ALIASES = {
+    name:        ['name','full name','officer name','employee name','personnel'],
+    discord:     ['discord','discord id','discord name','discord user','discord tag'],
+    badge:       ['callsign','call sign','cs','paygrade','pay grade','badge','badge #','badge number','employee id'],
+    rank:        ['rank','actual rank','current rank','title'],
+    status:      ['status','member status'],
+    timezone:    ['time zone','timezone','tz'],
+    loa:         ['loa','leave of absence','on loa'],
+    resigned:    ['resigned','resignation'],
+    terminated:  ['terminated','termination','term'],
+    join_date:   ['hire date','hired','join date','start date','date hired','date joined'],
+    mov_date:    ['mov. date','mov date','movement date','last movement'],
+    time_in_rank:['time in rank','rank time','tir'],
+    time_in_dept:['time in department','dept time','time in dept','tid'],
+    time_roster: ['time on roster','roster time','total time','tor'],
+  };
+  const aliases = ALIASES[fieldKey] || [];
+  for(const alias of aliases){
+    const idx = headers.findIndex(h=>(h||'').toLowerCase().trim()===alias);
+    if(idx>=0) return idx;
+  }
+  return -1;
+}
+
+// ── Parse a sheet response into mapped objects ──
+function parseSheetRows(data, deptId){
+  const mapping = GS_MAPPINGS[deptId] || {};
+  const headers = data.headers || [];
+  const rows = data.rows || [];
+  return rows.map((row, rowIdx) => {
+    const obj = { _rowIndex: rowIdx + 2 }; // 1-based, +1 for header
+    for(const f of GS_FIELDS){
+      const colIdx = detectColumn(headers, f.key, mapping);
+      obj[f.key] = colIdx >= 0 ? (row[colIdx]||'').toString().trim() : null;
+    }
+    return obj;
+  }).filter(r => r.name); // require at least a name
+}
+
+// ── Smart merge: sheet → employee database ──
+// Rules: never blank-overwrite, never overwrite write-protected fields from sheets
+function mergeSheetIntoMember(existing, sheetRow){
+  const changes = {};
+  for(const f of GS_FIELDS){
+    if(!f.writable) continue;          // status, loa etc. — DB is source of truth
+    if(f.promotionOnly) continue;      // rank handled separately by promotion flow
+    const sheetVal = sheetRow[f.key];
+    if(sheetVal === null || sheetVal === undefined || sheetVal === '') continue; // never blank-overwrite
+    const dbVal = existing[f.key] || '';
+    if(sheetVal !== dbVal) changes[f.key] = sheetVal;
+  }
+  return changes;
+}
+
+// ── Core sync function for one department ──
+async function syncDept(deptId){
+  const cfg = GS_CONFIGS[deptId];
+  if(!cfg || !cfg.url) return { synced:0, new:0, conflicts:0, errors:1, msg:'No sheet configured' };
+
+  gsLog('info', `Starting sync for dept: ${deptId}`, deptId);
+  let synced=0, created=0, conflicts=0;
+
+  try{
+    const data = await gsFetch(cfg.url, cfg.tab, cfg.headerRow||1);
+    const sheetMembers = parseSheetRows(data, deptId);
+    gsLog('info', `Fetched ${sheetMembers.length} rows from sheet`, deptId);
+
+    for(const sr of sheetMembers){
+      if(!sr.name) continue;
+
+      // Find existing member by name (primary) or badge
+      let existing = S.members.find(m =>
+        m.dept === deptId &&
+        (m.name.toLowerCase().trim() === sr.name.toLowerCase().trim() ||
+         (sr.badge && m.badge && m.badge.toLowerCase().trim() === sr.badge.toLowerCase().trim()))
+      );
+
+      if(!existing){
+        // New member — create in DB
+        const newId = 'm'+uid();
+        const newRow = {
+          id: newId,
+          name: sr.name,
+          badge: sr.badge||'',
+          dept: deptId,
+          rank: sr.rank||'',
+          status: 'active',
+          join_date: sr.join_date||'',
+          discord: sr.discord||'',
+          timezone: sr.timezone||'',
+          mov_date: sr.mov_date||'',
+          time_in_rank: sr.time_in_rank||'',
+          time_in_dept: sr.time_in_dept||'',
+          time_roster: sr.time_roster||'',
+        };
+        await dbUpsert('fudt_members', newRow);
+        S.members.push({...newRow, date:newRow.join_date});
+        created++;
+        gsLog('ok', `NEW: ${sr.name} (${sr.badge||'no badge'}) added from sheet`, deptId);
+        await auditLog('gs_sync_new', deptId, `Created ${sr.name} from sheet`, {});
+
+      } else {
+        // Existing — smart merge
+        const changes = mergeSheetIntoMember(existing, sr);
+
+        // Check for rank change → promotion flow
+        if(sr.rank && sr.rank !== existing.rank && sr.rank !== ''){
+          const conflict = {
+            id: uid(),
+            deptId,
+            memberId: existing.id,
+            memberName: existing.name,
+            field: 'rank',
+            dbValue: existing.rank,
+            sheetValue: sr.rank,
+            ts: Date.now(),
+            resolved: false,
+            source: 'rank_change'
+          };
+          // Check if already logged
+          const alreadyLogged = GS_CONFLICTS.find(c =>
+            c.memberId===existing.id && c.field==='rank' && c.sheetValue===sr.rank && !c.resolved
+          );
+          if(!alreadyLogged){
+            GS_CONFLICTS.push(conflict);
+            conflicts++;
+            gsLog('warn', `RANK CONFLICT: ${sr.name} — DB:"${existing.rank}" vs Sheet:"${sr.rank}" — needs review`, deptId);
+          }
+          delete changes.rank;
+        }
+
+        if(Object.keys(changes).length > 0){
+          const updateObj = { ...changes, updated_at: new Date().toISOString() };
+          await dbUpdate('fudt_members', existing.id, updateObj);
+          Object.assign(existing, changes);
+          synced++;
+          gsLog('ok', `UPDATED: ${existing.name} — fields: ${Object.keys(changes).join(', ')}`, deptId);
+          await auditLog('gs_sync_update', deptId, `Updated ${existing.name}`, changes);
+        }
+      }
+    }
+
+    saveConflicts();
+    updateConflictBadge();
+    gsLog('ok', `Sync complete: ${created} new, ${synced} updated, ${conflicts} conflicts`, deptId);
+    return { synced, new:created, conflicts, errors:0 };
+
+  } catch(e){
+    gsLog('err', `Sync FAILED for ${deptId}: ${e.message}`, deptId);
+    return { synced, new:created, conflicts, errors:1, msg:e.message };
+  }
+}
+
+// ── Global sync: all configured departments ──
+async function runGlobalSync(){
+  loadGSData();
+  const deptIds = Object.keys(GS_CONFIGS);
+  if(!deptIds.length){
+    toast('No departments configured for Google Sheets sync.','err',4000);
+    return;
+  }
+  setSyncStatus('syncing','SYNCING SHEETS...');
+  document.getElementById('gsGlobalStatus')?.setAttribute('class','gs-badge syncing');
+  document.getElementById('gsGlobalStatus').textContent = 'SYNCING...';
+
+  let totalNew=0, totalUpdated=0, totalConflicts=0, totalErrors=0;
+  for(const deptId of deptIds){
+    const r = await syncDept(deptId);
+    totalNew      += r.new||0;
+    totalUpdated  += r.synced||0;
+    totalConflicts+= r.conflicts||0;
+    totalErrors   += r.errors||0;
+  }
+
+  renderAll();
+  renderSyncLog();
+  renderConflicts();
+  setSyncStatus('ok','LIVE · Synced');
+  const statusEl = document.getElementById('gsGlobalStatus');
+  if(statusEl){
+    statusEl.className = totalErrors ? 'gs-badge error' : 'gs-badge connected';
+    statusEl.textContent = totalErrors ? `ERRORS: ${totalErrors}` : `LAST SYNC: ${new Date().toLocaleTimeString()}`;
+  }
+  toast(`Sync complete — ${totalNew} new, ${totalUpdated} updated, ${totalConflicts} conflicts`, totalErrors?'err':'ok', 5000);
+}
+
+// ── Promotion write-back to sheet ──
+async function gsSyncPromotion(deptId, memberName, badgeVal, newRank){
+  const cfg = GS_CONFIGS[deptId];
+  if(!cfg || !cfg.url) return;
+  try{
+    const data = await gsFetch(cfg.url, cfg.tab, cfg.headerRow||1);
+    const mapping = GS_MAPPINGS[deptId]||{};
+    const headers = data.headers||[];
+    const rankColIdx = detectColumn(headers,'rank',mapping);
+    if(rankColIdx < 0){ gsLog('warn',`Promotion write: rank column not found in sheet for ${deptId}`,deptId); return; }
+    const rankColHeader = headers[rankColIdx];
+    const nameColIdx = detectColumn(headers,'name',mapping);
+    // Find the row
+    const rows = data.rows||[];
+    const rowIdx = rows.findIndex(r =>
+      (r[nameColIdx]||'').toLowerCase().trim() === memberName.toLowerCase().trim()
+    );
+    if(rowIdx < 0){ gsLog('warn',`Promotion write: ${memberName} not found in sheet`,deptId); return; }
+    await gsWrite(cfg.url, cfg.tab, rowIdx+2, rankColHeader, newRank);
+    gsLog('ok',`Promotion write-back: ${memberName} → ${newRank} in sheet`,deptId);
+  } catch(e){
+    gsLog('err',`Promotion write failed for ${memberName}: ${e.message}`,deptId);
+  }
+}
+
+// ── Audit log ──
+async function auditLog(action, deptId, description, changes){
+  try{
+    const entry = {
+      id: 'al'+uid(),
+      action,
+      dept_id: deptId,
+      description,
+      changes: JSON.stringify(changes),
+      by_user: CU?.username||'system',
+      ts: Date.now()
+    };
+    await SB.from('fudt_audit_log').insert(entry).then(()=>{}).catch(()=>{});
+  }catch(e){}
+}
+
+// ── Conflict resolution ──
+function resolveConflict(conflictId, keepDb){
+  const idx = GS_CONFLICTS.findIndex(c=>c.id===conflictId);
+  if(idx<0) return;
+  const c = GS_CONFLICTS[idx];
+  if(!keepDb){
+    // Apply sheet value
+    const m = S.members.find(x=>x.id===c.memberId);
+    if(m){
+      const upd = { [c.field]: c.sheetValue, updated_at: new Date().toISOString() };
+      dbUpdate('fudt_members', m.id, upd);
+      m[c.field] = c.sheetValue;
+      if(c.field==='rank') gsSyncPromotion(c.deptId, m.name, m.badge, c.sheetValue);
+      auditLog('conflict_resolved_sheet', c.deptId, `${m.name} ${c.field}: kept sheet value "${c.sheetValue}"`, {});
+      gsLog('ok',`Conflict resolved — used sheet value: ${m.name} ${c.field}="${c.sheetValue}"`,c.deptId);
+    }
+  } else {
+    auditLog('conflict_resolved_db', c.deptId, `${c.memberName} ${c.field}: kept DB value "${c.dbValue}"`, {});
+    gsLog('info',`Conflict resolved — kept DB value: ${c.memberName} ${c.field}="${c.dbValue}"`,c.deptId);
+  }
+  GS_CONFLICTS[idx].resolved = true;
+  saveConflicts();
+  renderConflicts();
+  renderAll();
+}
+
+// ── Resolve all conflicts keeping DB ──
+function resolveAllKeepDb(){
+  GS_CONFLICTS.filter(c=>!c.resolved).forEach(c=>{ c.resolved=true; });
+  saveConflicts(); renderConflicts(); updateConflictBadge();
+  gsLog('info','All conflicts resolved — DB values kept','');
+  toast('All conflicts resolved — DB values kept','ok',3000);
+}
+
+// ── UI: sheet config save/test ──
+function gsSaveSheet(){
+  const deptId   = v('gsDeptSel');
+  const scriptUrl= v('gsScriptUrl').trim().replace(/\/$/, '');
+  const tab      = v('gsTabName').trim();
+  const headerRow= parseInt(v('gsHeaderRow'))||1;
+  const role     = v('gsSheetRole');
+  const msg      = document.getElementById('gsSheetMsg');
+  if(!deptId||!scriptUrl||!tab){ showMsg(msg,'err','⚠ Department, script URL and tab name are all required.'); return; }
+  if(!scriptUrl.includes('script.google.com')){ showMsg(msg,'err','⚠ Must be a Google Apps Script URL.'); return; }
+  GS_CONFIGS[deptId] = { url:scriptUrl, tab, headerRow, role };
+  saveGSConfigs();
+  renderGSSheetList();
+  renderGSFieldMapper(deptId);
+  showMsg(msg,'ok','✓ Sheet configuration saved.');
+  gsLog('info',`Sheet config saved for dept ${deptId}  (${tab})`,deptId);
+}
+
+async function gsTestSheet(){
+  const deptId    = v('gsDeptSel');
+  const scriptUrl = v('gsScriptUrl').trim().replace(/\/$/, '');
+  const tab       = v('gsTabName').trim();
+  const headerRow = parseInt(v('gsHeaderRow'))||1;
+  const msg       = document.getElementById('gsSheetMsg');
+  if(!scriptUrl||!tab){ showMsg(msg,'err','⚠ Enter URL and tab name first.'); return; }
+  showMsg(msg,'ok','Testing connection...');
+  try{
+    const data = await gsFetch(scriptUrl, tab, headerRow);
+    const rowCount = (data.rows||[]).length;
+    const cols = (data.headers||[]).filter(Boolean).length;
+    showMsg(msg,'ok',`✓ Connected! ${cols} columns, ${rowCount} data rows detected.`);
+    gsLog('ok',`Sheet test OK: ${cols} cols, ${rowCount} rows for ${tab}`,deptId);
+    // Auto-render field mapper
+    renderGSFieldMapper(deptId, data.headers||[]);
+  } catch(e){
+    showMsg(msg,'err',`⚠ Failed: ${e.message}`);
+    gsLog('err',`Sheet test FAILED for ${tab}: ${e.message}`,deptId);
+  }
+}
+
+function gsSaveMapping(){
+  const deptId = v('gsDeptSel');
+  const msg = document.getElementById('gsMappingMsg');
+  if(!deptId){ showMsg(msg,'err','⚠ Select a department first.'); return; }
+  const mapping = {};
+  GS_FIELDS.forEach(f=>{
+    const el = document.getElementById('gsmap_'+f.key);
+    if(el && el.value.trim()) mapping[f.key] = el.value.trim();
+  });
+  GS_MAPPINGS[deptId] = mapping;
+  saveGSMappings();
+  showMsg(msg,'ok','✓ Field mapping saved.');
+  gsLog('info',`Field mapping saved for dept ${deptId}`,deptId);
+}
+
+// ── UI Renders ──
+function renderGSSheetList(){
+  const el = document.getElementById('gsSheetList'); if(!el) return;
+  const depts = S.depts.filter(d=>GS_CONFIGS[d.id]);
+  if(!depts.length){ el.innerHTML='<div class="empty">No sheets configured yet.</div>'; return; }
+  el.innerHTML = depts.map(d=>{
+    const cfg = GS_CONFIGS[d.id];
+    const roleLabel = {dept:'Dept Roster',main:'Main Roster',empdb:'Employee DB'}[cfg.role]||cfg.role;
+    return `<div class="list-row">
+      <div class="list-row-l">
+        <span class="dept-dot" style="background:${d.color}"></span>
+        <div>
+          <div class="list-row-name">${d.name}</div>
+          <div class="list-row-sub">${roleLabel} · Tab: "${cfg.tab}" · Header row ${cfg.headerRow||1}</div>
+          <div style="font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:2px;word-break:break-all;">${cfg.url.slice(0,60)}…</div>
+        </div>
+      </div>
+      <div class="list-row-acts">
+        <button class="fbtn" style="margin:0;padding:4px 10px;font-size:9px;" onclick="gsEditSheet('${d.id}')">EDIT</button>
+        <button class="fbtn" style="margin:0;padding:4px 10px;font-size:9px;background:rgba(52,168,83,.1);border-color:#34a853;color:#34a853;" onclick="syncDeptUI('${d.id}')">SYNC</button>
+        <button class="btn-del" onclick="gsDeleteSheet('${d.id}')">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function gsEditSheet(deptId){
+  const cfg = GS_CONFIGS[deptId]; if(!cfg) return;
+  document.getElementById('gsDeptSel').value      = deptId;
+  document.getElementById('gsScriptUrl').value    = cfg.url;
+  document.getElementById('gsTabName').value      = cfg.tab;
+  document.getElementById('gsHeaderRow').value    = cfg.headerRow||1;
+  document.getElementById('gsSheetRole').value    = cfg.role||'dept';
+  renderGSFieldMapper(deptId);
+}
+
+function gsDeleteSheet(deptId){
+  if(!confirm('Remove Google Sheets config for this department?')) return;
+  delete GS_CONFIGS[deptId];
+  saveGSConfigs();
+  renderGSSheetList();
+  gsLog('info',`Sheet config removed for dept ${deptId}`,deptId);
+}
+
+async function syncDeptUI(deptId){
+  const dept = S.depts.find(d=>d.id===deptId);
+  toast(`Syncing ${dept?.abbr||deptId}...`,'info',2000);
+  const result = await syncDept(deptId);
+  renderAll(); renderSyncLog(); renderConflicts();
+  toast(`${dept?.abbr||deptId}: ${result.new} new, ${result.synced} updated, ${result.conflicts} conflicts`,'ok',5000);
+}
+
+function renderGSFieldMapper(deptId, liveHeaders){
+  const el = document.getElementById('gsFieldMapper'); if(!el) return;
+  const mapping = GS_MAPPINGS[deptId]||{};
+  const nameEl = document.getElementById('gsMapDeptName');
+  const dept = S.depts.find(d=>d.id===deptId);
+  if(nameEl) nameEl.textContent = dept?.name||deptId;
+
+  el.innerHTML = GS_FIELDS.map(f=>{
+    const saved = mapping[f.key]||'';
+    const dbOnly = !f.writable;
+    const promoOnly = f.promotionOnly;
+    const note = dbOnly ? '<span style="color:var(--text3);font-size:8px;"> (DB-only)</span>'
+                : promoOnly ? '<span style="color:var(--amber);font-size:8px;"> (promotion write-back)</span>' : '';
+    const headerOptions = liveHeaders
+      ? `<datalist id="dh_${f.key}">${liveHeaders.map(h=>`<option value="${h}">`).join('')}</datalist>`
+      : '';
+    return `<div class="field-map-row">
+      <div class="field-map-label">${f.label}${note}</div>
+      <div class="field-map-arrow">←</div>
+      ${headerOptions}
+      <input class="fi" id="gsmap_${f.key}" value="${saved}" placeholder="Sheet column header name" list="dh_${f.key}" style="font-size:11px;${dbOnly?'opacity:.45;':''}">
+      ${!saved?'':'<span style="font-family:var(--mono);font-size:9px;color:var(--green);">✓</span>'}
+    </div>`;
+  }).join('');
+}
+
+function renderSyncLog(){
+  const el = document.getElementById('syncLogList'); if(!el) return;
+  const metaEl = document.getElementById('syncLogMeta');
+  if(!GS_SYNC_LOG.length){ el.innerHTML='<div class="empty">No log entries yet. Run a sync to populate.</div>'; return; }
+  if(metaEl) metaEl.textContent = `${GS_SYNC_LOG.length} entries · Last: ${new Date(GS_SYNC_LOG[0].ts).toLocaleString()}`;
+  el.innerHTML = GS_SYNC_LOG.map(e=>{
+    const d = new Date(e.ts);
+    const time = `${d.toLocaleDateString()} ${d.toLocaleTimeString()}`;
+    const dept = S.depts.find(x=>x.id===e.dept);
+    return `<div class="sync-log-entry ${e.level}">
+      <span class="sync-log-time">${time}</span>
+      ${dept?`<span style="color:${dept.color};margin-right:.5rem;">[${dept.abbr}]</span>`:''}
+      ${e.msg}
+    </div>`;
+  }).join('');
+}
+
+function clearSyncLog(){
+  if(!confirm('Clear all sync log entries?')) return;
+  GS_SYNC_LOG=[];
+  saveGSLog();
+  renderSyncLog();
+}
+
+function renderConflicts(){
+  const el = document.getElementById('conflictList'); if(!el) return;
+  const open = GS_CONFLICTS.filter(c=>!c.resolved);
+  updateConflictBadge();
+  if(!open.length){ el.innerHTML='<div class="empty" style="border-color:var(--green-dim);color:var(--green);">✓ No conflicts — all data is consistent.</div>'; return; }
+  el.innerHTML = `<div style="display:flex;justify-content:flex-end;margin-bottom:.75rem;">
+    <button class="fbtn" style="margin:0;padding:6px 14px;font-size:10px;" onclick="resolveAllKeepDb()">KEEP ALL DB VALUES</button>
+  </div>`+
+  open.map(c=>{
+    const dept = S.depts.find(d=>d.id===c.deptId);
+    const field = GS_FIELDS.find(f=>f.key===c.field);
+    return `<div class="conflict-row">
+      <div class="conflict-row-hdr">
+        <div>
+          <span style="font-family:var(--cond);font-size:14px;font-weight:700;">${c.memberName}</span>
+          <span style="margin-left:.75rem;font-size:9px;color:${dept?.color||'var(--text3)'};">${dept?.abbr||c.deptId}</span>
+        </div>
+        <span style="font-size:9px;color:var(--text3);">${new Date(c.ts).toLocaleString()}</span>
+      </div>
+      <div class="conflict-field">
+        <span style="color:var(--text3);">${field?.label||c.field}</span>
+        <span class="cv-db">DB: "${c.dbValue}"</span>
+        <span class="cv-sheet">Sheet: "${c.sheetValue}"</span>
+        <div style="display:flex;gap:4px;">
+          <button class="btn-resolve keep-db" onclick="resolveConflict('${c.id}',true)">KEEP DB</button>
+          <button class="btn-resolve use-sheet" onclick="resolveConflict('${c.id}',false)">USE SHEET</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function updateConflictBadge(){
+  const open = GS_CONFLICTS.filter(c=>!c.resolved).length;
+  const el = document.getElementById('conflictCt');
+  if(el){ el.style.display=open?'':'none'; el.textContent=open; }
+}
+
+function renderHealth(){
+  const hg = document.getElementById('healthGrid');
+  const hd = document.getElementById('healthDeptBreakdown');
+  if(!hg||!hd) return;
+
+  const total   = S.members.length;
+  const active  = S.members.filter(m=>m.status==='active').length;
+  const loa     = S.members.filter(m=>m.status==='loa').length;
+  const inactive= S.members.filter(m=>m.status==='inactive').length;
+  const needs   = S.members.filter(m=>m.status==='needs').length;
+  const configured = Object.keys(GS_CONFIGS).length;
+  const openConf   = GS_CONFLICTS.filter(c=>!c.resolved).length;
+  const lastSync   = GS_SYNC_LOG.length ? new Date(GS_SYNC_LOG[0].ts).toLocaleTimeString() : 'Never';
+
+  hg.innerHTML = [
+    { v:total,      l:'Total Personnel',  c:'var(--accent)' },
+    { v:active,     l:'Active',           c:'var(--green)'  },
+    { v:loa,        l:'On LOA',           c:'var(--blue)'   },
+    { v:inactive,   l:'Inactive',         c:'var(--text3)'  },
+    { v:needs,      l:'Needs Improvement',c:'var(--amber)'  },
+    { v:configured, l:'Sheets Connected', c:'#34a853'       },
+    { v:openConf,   l:'Open Conflicts',   c:openConf?'var(--red)':'var(--green)' },
+    { v:lastSync,   l:'Last Sync',        c:'var(--text2)', isText:true },
+  ].map(x=>`<div class="health-card">
+    <div class="health-card-val" style="color:${x.c};">${x.v}</div>
+    <div class="health-card-lbl">${x.l}</div>
+  </div>`).join('');
+
+  hd.innerHTML = S.depts.map(d=>{
+    const dm = S.members.filter(m=>m.dept===d.id);
+    const cfg = GS_CONFIGS[d.id];
+    const pct = dm.length ? Math.round(dm.filter(m=>m.status==='active').length/dm.length*100) : 0;
+    return `<div style="background:var(--surface);border:1px solid var(--border);padding:.75rem 1rem;margin-bottom:.5rem;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-family:var(--cond);font-size:14px;font-weight:700;color:${d.color};">${d.name}</span>
+        <span style="font-family:var(--mono);font-size:9px;color:${cfg?'#34a853':'var(--text3)'};">
+          ${cfg?'📊 Sheet connected':'⚫ No sheet'}
+        </span>
+      </div>
+      <div style="font-family:var(--mono);font-size:10px;color:var(--text3);margin-top:4px;">
+        ${dm.length} personnel · ${pct}% active · ${dm.filter(m=>m.status==='loa').length} LOA
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%;background:${d.color};"></div></div>
+    </div>`;
+  }).join('');
+}
+
+// ── Populate Google Sheets dept selects ──
+function populateGSDeptSel(){
+  const el = document.getElementById('gsDeptSel'); if(!el) return;
+  el.innerHTML = S.depts.map(d=>`<option value="${d.id}">${d.name} (${d.abbr})</option>`).join('');
+}
+
+// ── GAS Proxy Script Template ──
+// This is shown to admin so they know what to deploy
+const GAS_TEMPLATE = `
+// ── FUDT Google Apps Script Proxy ──
+// Paste this in Google Apps Script, deploy as Web App (Anyone can access)
+function doGet(e) {
+  var tab = e.parameter.tab || '';
+  var headerRow = parseInt(e.parameter.headerRow||'1');
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(tab);
+  if (!sheet) return json({error: 'Tab not found: ' + tab});
+  var data = sheet.getDataRange().getValues();
+  var headers = data[headerRow-1] || [];
+  var rows = data.slice(headerRow);
+  return json({ headers: headers, rows: rows });
+}
+function doPost(e) {
+  var body = JSON.parse(e.postData.contents);
+  if (body.action === 'write') {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheetByName(body.tab);
+    if (!sheet) return json({error:'Tab not found'});
+    var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    var colIdx = headers.indexOf(body.col);
+    if (colIdx < 0) return json({error:'Column not found: '+body.col});
+    sheet.getRange(body.row, colIdx+1).setValue(body.value);
+    return json({ok: true});
+  }
+  return json({error:'Unknown action'});
+}
+function json(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}`.trim();
+
+function copyGAS(){
+  const el = document.getElementById('gasTemplate');
+  if(!el) return;
+  navigator.clipboard.writeText(el.value).then(()=>{
+    showMsg(document.getElementById('gasMsg'),'ok','✓ Script copied to clipboard!');
+  }).catch(()=>{
+    el.select(); document.execCommand('copy');
+    showMsg(document.getElementById('gasMsg'),'ok','✓ Copied!');
+  });
+}
+
+// Auto-sync every 5 minutes if sheets are configured
+let _autoSyncTimer = null;
+function startAutoSync(){
+  if(_autoSyncTimer) clearInterval(_autoSyncTimer);
+  _autoSyncTimer = setInterval(()=>{
+    loadGSData();
+    if(Object.keys(GS_CONFIGS).length > 0 && CU?.role==='admin'){
+      runGlobalSync();
+    }
+  }, 5 * 60 * 1000); // 5 min
+}
+
+// ════════════════════════════════════════════════════════
 //  HELPERS
 // ════════════════════════════════════════════════════════
 function v(id){ const el=document.getElementById(id); return el?el.value:''; }
@@ -1778,25 +2794,58 @@ function showMsg(el,type,text){ el.className='fmsg '+type; el.textContent=text; 
 //  BOOT
 // ════════════════════════════════════════════════════════
 (async function boot(){
-  const cfg = loadConfig();
-  if(cfg){
-    initFromConfig(cfg);
-    // Quick connection test
-    try{
-      await SB.from('fudt_users').select('id').limit(1);
-      document.getElementById('setupOverlay').classList.add('hidden');
-      document.getElementById('loginOverlay').style.display = 'flex';
-      await loadAll();
-      await seed();
-      setSyncStatus('ok','CONNECTED · Supabase');
-    } catch(e){
-      // Saved config failed, show setup again
-      document.getElementById('sbUrl').value = cfg.url||'';
-      document.getElementById('sbKey').value = cfg.key||'';
-      setSyncStatus('err','RECONNECT NEEDED');
+  // Always initialize Supabase with baked-in credentials
+  SB = supabase.createClient(_SB_URL, _SB_KEY);
+
+  // Hide setup screen immediately — not needed
+  document.getElementById('setupOverlay').classList.add('hidden');
+
+  setSyncStatus('syncing', 'CONNECTING...');
+
+  try{
+    // Verify connection
+    await SB.from('fudt_users').select('id').limit(1);
+    setSyncStatus('ok', 'CONNECTED · Supabase');
+    await loadAll();
+    await seed();
+    loadGSData();
+    updateConflictBadge();
+
+    // Check for persisted session
+    const savedSession = loadSession();
+    if(savedSession){
+      // Validate session user still exists in DB
+      const { data: users } = await SB.from('fudt_users').select('*').eq('id', savedSession.id).limit(1);
+      if(users && users.length){
+        const u_row = users[0];
+        CU = {id:u_row.id,username:u_row.username,password:u_row.password,displayName:u_row.display_name,role:u_row.role,deptId:u_row.dept_id};
+        saveSession(CU); // refresh session
+        document.getElementById('loginOverlay').style.display = 'none';
+        document.getElementById('appWrap').style.display = '';
+        setupTopbar();
+        const acc = accessibleDepts();
+        if(acc.length > 0) AD = acc[0].id;
+        renderAll();
+        populateAllFormDepts();
+        startRealtime();
+        startAutoSync();
+        updateCommandNotifs(S.loas.filter(r=>r.status==='pending').length + S.movs.filter(r=>r.status==='pending').length);
+        updatePendingBadges();
+        setSyncStatus('ok', 'LIVE · Supabase realtime');
+        toast('Welcome back, ' + CU.displayName + '!', 'ok', 3000);
+        return;
+      } else {
+        // Session user no longer valid, clear it
+        clearSession();
+      }
     }
-  } else {
-    setSyncStatus('err','SETUP REQUIRED');
+
+    // No valid session — show login
+    document.getElementById('loginOverlay').style.display = 'flex';
+
+  } catch(e){
+    setSyncStatus('err', 'CONNECTION FAILED — check network');
+    document.getElementById('loginOverlay').style.display = 'flex';
   }
 })();
 </script>
