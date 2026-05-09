@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FiveM Universal — Department Toolkit</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet">
-<script src="https://accounts.google.com/gsi/client" async defer></script>
+<!-- Supabase JS -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
   --bg:#07090f;--bg2:#0b0e17;--bg3:#0f1320;--surface:#111829;--surface2:#151e30;
@@ -28,11 +29,21 @@ body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(
 body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.07)2px,rgba(0,0,0,.07)4px);pointer-events:none;z-index:0;}
 .wrap{position:relative;z-index:1;}
 
-/* ─── LOGIN ─── */
+/* ── SETUP SCREEN ── */
+.setup-overlay{position:fixed;inset:0;background:radial-gradient(ellipse at center,#0b0f1a 0%,#07090f 100%);z-index:600;display:flex;align-items:center;justify-content:center;}
+.setup-overlay.hidden{display:none;}
+.setup-box{background:var(--bg2);border:1px solid var(--border2);padding:2.5rem;width:540px;max-width:97vw;box-shadow:0 0 80px rgba(58,123,213,.12);}
+.setup-title{font-family:var(--head);font-size:28px;letter-spacing:6px;color:var(--accent);margin-bottom:4px;}
+.setup-sub{font-family:var(--mono);font-size:9px;letter-spacing:3px;color:var(--text3);margin-bottom:1.5rem;}
+.setup-steps{font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:.5px;line-height:2.4;margin-bottom:1.5rem;padding:1rem;border:1px solid var(--border);background:var(--surface);}
+.setup-steps strong{color:var(--text2);}
+.setup-steps a{color:var(--accent);text-decoration:none;}
+.setup-steps code{color:var(--gold);background:rgba(200,168,75,.08);padding:1px 5px;}
+
+/* ── LOGIN ── */
 .login-overlay{position:fixed;inset:0;background:radial-gradient(ellipse at center,#0b0f1a 0%,#07090f 100%);z-index:500;display:flex;align-items:center;justify-content:center;}
 .login-overlay.hidden{display:none;}
 .login-box{background:var(--bg2);border:1px solid var(--border2);padding:3rem 2.5rem;width:440px;max-width:96vw;text-align:center;box-shadow:0 0 80px rgba(58,123,213,.12);}
-.login-logo-img{width:130px;height:130px;object-fit:contain;filter:drop-shadow(0 0 28px rgba(58,123,213,.55));display:block;margin:0 auto .75rem;}
 .login-logo-fallback{font-family:var(--head);font-size:68px;letter-spacing:4px;color:var(--accent);text-shadow:0 0 40px rgba(58,123,213,.6);line-height:1;margin-bottom:.5rem;}
 .login-title{font-family:var(--head);font-size:24px;letter-spacing:7px;color:var(--accent);margin-bottom:3px;}
 .login-sub{font-family:var(--mono);font-size:9px;letter-spacing:4px;color:var(--text3);text-transform:uppercase;margin-bottom:1.75rem;}
@@ -43,13 +54,17 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
 .login-btn{width:100%;background:var(--accent-dim);border:1px solid var(--accent);color:var(--accent);font-family:var(--mono);font-size:11px;letter-spacing:3px;text-transform:uppercase;padding:13px;cursor:pointer;transition:all .2s;margin-top:.5rem;}
 .login-btn:hover{background:var(--accent);color:#07090f;}
 .login-err{font-family:var(--mono);font-size:10px;color:var(--red);letter-spacing:1px;margin-top:10px;display:none;padding:8px 10px;border:1px solid var(--red-dim);background:rgba(200,75,75,.05);}
-.login-hint{font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:1px;margin-top:1.5rem;line-height:2.2;}
-.login-hint span{color:var(--text2);}
+.login-switch{font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:1px;margin-top:1.25rem;cursor:pointer;}
+.login-switch span{color:var(--accent);text-decoration:underline;cursor:pointer;}
+.reg-title{font-family:var(--head);font-size:20px;letter-spacing:6px;color:var(--green);margin-bottom:3px;}
+.pending-box{background:rgba(75,200,122,.05);border:1px solid var(--green-dim);padding:1.5rem;text-align:center;margin-top:1rem;}
+.pending-box .pi{font-family:var(--head);font-size:56px;color:var(--green);line-height:1;}
+.pending-box .pt{font-family:var(--mono);font-size:11px;color:var(--green);letter-spacing:2px;margin-top:.5rem;}
+.pending-box .ps{font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:1px;margin-top:.75rem;line-height:2;}
 
-/* ─── TOPBAR ─── */
+/* ── TOPBAR ── */
 .topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:0 1.75rem;display:flex;align-items:center;justify-content:space-between;height:58px;position:sticky;top:0;z-index:50;}
 .tb-left{display:flex;align-items:center;gap:.9rem;}
-.tb-logo-img{width:36px;height:36px;object-fit:contain;filter:drop-shadow(0 0 8px rgba(58,123,213,.5));}
 .tb-title{font-family:var(--head);font-size:21px;letter-spacing:3px;color:var(--accent);}
 .tb-tag{font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:2px;border:1px solid var(--border);padding:2px 8px;text-transform:uppercase;}
 .tb-right{display:flex;align-items:center;gap:.55rem;flex-wrap:wrap;}
@@ -59,13 +74,15 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
 .role-a{color:#ff7043;border-color:#5c2810;background:rgba(255,112,67,.07);}
 .role-h{color:var(--gold);border-color:var(--gold-dim);background:rgba(200,168,75,.07);}
 .role-m{color:var(--accent);border-color:var(--accent-dim);background:rgba(58,123,213,.07);}
-.tb-btn{font-family:var(--mono);font-size:10px;letter-spacing:1px;text-transform:uppercase;background:transparent;border:1px solid;padding:5px 12px;cursor:pointer;transition:all .2s;}
+.tb-btn{font-family:var(--mono);font-size:10px;letter-spacing:1px;text-transform:uppercase;background:transparent;border:1px solid;padding:5px 12px;cursor:pointer;transition:all .2s;position:relative;}
 .btn-adm{border-color:#5c2810;color:#ff7043;}.btn-adm:hover{background:#5c2810;}
 .btn-hcp{border-color:var(--gold-dim);color:var(--gold);}.btn-hcp:hover{background:var(--gold-dim);}
 .btn-req{border-color:var(--accent-dim);color:var(--accent);}.btn-req:hover{background:var(--accent-dim);}
 .btn-out{border-color:var(--red-dim);color:var(--red);}.btn-out:hover{background:var(--red-dim);}
+.notif-dot{position:absolute;top:-4px;right:-4px;width:8px;height:8px;border-radius:50%;background:var(--red);border:2px solid var(--bg2);animation:pulse 1.5s ease-in-out infinite;display:none;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
 
-/* ─── NAV TABS ─── */
+/* ── NAV TABS ── */
 .navtabs{background:var(--bg3);border-bottom:1px solid var(--border);display:flex;padding:0 1.75rem;gap:0;}
 .ntab{font-family:var(--mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;background:transparent;border:none;border-bottom:2px solid transparent;color:var(--text3);padding:10px 18px;cursor:pointer;transition:all .15s;margin-bottom:-1px;}
 .ntab:hover{color:var(--text2);}
@@ -73,10 +90,8 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
 .ntab.tloa{color:var(--blue);}.ntab.tloa.active{color:var(--blue);border-bottom-color:var(--blue);}
 .ntab.tmov{color:var(--amber);}.ntab.tmov.active{color:var(--amber);border-bottom-color:var(--amber);}
 
-/* ─── LAYOUT ─── */
+/* ── LAYOUT ── */
 .layout{display:grid;grid-template-columns:255px 1fr;min-height:calc(100vh - 106px);}
-
-/* ─── SIDEBAR ─── */
 .sidebar{background:var(--bg2);border-right:1px solid var(--border);padding:1.25rem 0;position:sticky;top:58px;height:calc(100vh - 58px);overflow-y:auto;}
 .sb-label{font-family:var(--mono);font-size:9px;letter-spacing:3px;color:var(--text3);text-transform:uppercase;padding:0 1rem .6rem;border-bottom:1px solid var(--border);margin-bottom:.75rem;display:block;}
 .sb-depts{padding:0 .75rem;}
@@ -86,19 +101,17 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
 .dept-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
 .dept-count{margin-left:auto;font-family:var(--mono);font-size:10px;background:var(--surface2);color:var(--text3);padding:1px 6px;}
 .dept-btn.active .dept-count{background:var(--accent-dim);color:var(--accent);}
-.sb-locked{margin:.75rem;padding:.9rem;border:1px dashed var(--border);font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:1px;text-align:center;line-height:2;}
 .sb-stats{padding:1rem 1.25rem;border-top:1px solid var(--border);margin-top:auto;}
 .sstat{display:flex;justify-content:space-between;align-items:center;padding:3px 0;font-family:var(--mono);font-size:10px;color:var(--text3);}
 .sstat-v{font-size:12px;color:var(--accent);}
 
-/* ─── MAIN ─── */
+/* ── MAIN ── */
 .main{padding:2rem;}
 .page{display:none;}
 .page.active{display:block;}
 
 /* ROSTER */
 .dept-hdr{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:1.75rem;padding-bottom:1.5rem;border-bottom:1px solid var(--border);}
-.dept-hdr-left{}
 .dept-name{font-family:var(--head);font-size:48px;letter-spacing:3px;line-height:1;}
 .dept-sub{font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:3px;margin-top:4px;}
 .dept-nums{display:flex;gap:1.5rem;}
@@ -155,7 +168,6 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
 .fta{width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:12px;padding:9px 12px;outline:none;letter-spacing:1px;resize:vertical;min-height:80px;transition:border-color .2s;}
 .fta:focus{border-color:var(--accent-dim);}
 .frow{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
-.frow3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;}
 .fbtn{font-family:var(--mono);font-size:11px;letter-spacing:2px;text-transform:uppercase;background:var(--accent-dim);border:1px solid var(--accent);color:var(--accent);padding:11px 24px;cursor:pointer;transition:all .2s;margin-top:.25rem;}
 .fbtn:hover{background:var(--accent);color:#07090f;}
 .fbtn.amber{background:var(--amber-dim);border-color:var(--amber);color:var(--amber);}
@@ -164,6 +176,8 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
 .fbtn.gold:hover{background:var(--gold);color:#07090f;}
 .fbtn.red{background:var(--red-dim);border-color:var(--red);color:var(--red);}
 .fbtn.red:hover{background:var(--red);color:#fff;}
+.fbtn.green{background:var(--green-dim);border-color:var(--green);color:var(--green);}
+.fbtn.green:hover{background:var(--green);color:#07090f;}
 .fmsg{font-family:var(--mono);font-size:11px;letter-spacing:1px;margin-top:.75rem;padding:.75rem 1rem;border:1px solid;display:none;}
 .fmsg.ok{color:var(--green);border-color:var(--green-dim);background:rgba(75,200,122,.05);}
 .fmsg.err{color:var(--red);border-color:var(--red-dim);background:rgba(200,75,75,.05);}
@@ -171,6 +185,8 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
 /* REQUEST CARDS */
 .req-grid{display:grid;gap:.75rem;}
 .req-card{background:var(--surface);border:1px solid var(--border);padding:1rem 1.25rem;display:flex;gap:1rem;align-items:flex-start;animation:fadeR .25s ease;}
+.req-card.new-flash{animation:flashNew .8s ease;}
+@keyframes flashNew{0%{background:rgba(58,123,213,.18);border-color:var(--accent);}100%{background:var(--surface);border-color:var(--border);}}
 .req-card-body{flex:1;}
 .req-card-hdr{display:flex;align-items:center;gap:.6rem;margin-bottom:.5rem;flex-wrap:wrap;}
 .rtag{font-family:var(--mono);font-size:9px;letter-spacing:1px;text-transform:uppercase;padding:2px 7px;border:1px solid;}
@@ -188,14 +204,11 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
 .btn-deny:hover{background:var(--red-dim);}
 .btn-del{font-family:var(--mono);font-size:9px;letter-spacing:1px;background:transparent;border:1px solid var(--border2);color:var(--text3);padding:3px 8px;cursor:pointer;transition:all .15s;text-transform:uppercase;}
 .btn-del:hover{border-color:var(--red-dim);color:var(--red);}
-.btn-sm{font-family:var(--mono);font-size:9px;letter-spacing:1px;background:transparent;border:1px solid var(--border2);color:var(--text2);padding:3px 8px;cursor:pointer;transition:all .15s;text-transform:uppercase;}
-.btn-sm:hover{background:var(--surface2);}
 
 /* MODALS */
 .modal-ov{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:200;display:none;align-items:center;justify-content:center;backdrop-filter:blur(3px);}
 .modal-ov.open{display:flex;}
 .modal{background:var(--bg2);border:1px solid var(--border2);width:800px;max-width:97vw;max-height:93vh;overflow-y:auto;animation:mIn .2s ease;}
-.modal.sm{width:500px;}
 @keyframes mIn{from{opacity:0;transform:scale(.96) translateY(-8px);}to{opacity:1;transform:none;}}
 .modal-hdr{display:flex;align-items:center;justify-content:space-between;padding:1rem 1.5rem;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;z-index:5;}
 .modal-title{font-family:var(--head);font-size:26px;letter-spacing:4px;color:var(--accent);}
@@ -204,7 +217,7 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
 .modal-x:hover{color:var(--red);}
 .modal-body{padding:1.5rem;}
 .mtabs{display:flex;gap:0;margin-bottom:1.5rem;border-bottom:1px solid var(--border);flex-wrap:wrap;}
-.mtab{font-family:var(--mono);font-size:10px;letter-spacing:1px;text-transform:uppercase;background:transparent;border:none;border-bottom:2px solid transparent;color:var(--text3);padding:8px 14px;cursor:pointer;margin-bottom:-1px;transition:all .15s;}
+.mtab{font-family:var(--mono);font-size:10px;letter-spacing:1px;text-transform:uppercase;background:transparent;border:none;border-bottom:2px solid transparent;color:var(--text3);padding:8px 14px;cursor:pointer;margin-bottom:-1px;transition:all .15s;position:relative;}
 .mtab:hover{color:var(--text2);}
 .mtab.active{color:var(--accent);border-bottom-color:var(--accent);}
 .mtab.gold.active{color:var(--gold);border-bottom-color:var(--gold);}
@@ -216,58 +229,66 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
 .list-row-l{display:flex;align-items:center;gap:10px;}
 .list-row-name{font-family:var(--cond);font-size:13px;font-weight:600;letter-spacing:1px;color:var(--text);}
 .list-row-sub{font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:1px;letter-spacing:1px;}
-.list-row-acts{display:flex;gap:5px;align-items:center;}
+.list-row-acts{display:flex;gap:5px;align-items:center;flex-wrap:wrap;justify-content:flex-end;}
 .color-grid{display:flex;gap:8px;flex-wrap:wrap;}
 .color-dot{width:28px;height:28px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all .15s;flex-shrink:0;}
 .color-dot:hover{transform:scale(1.1);}
 .color-dot.sel{border-color:#fff;box-shadow:0 0 8px rgba(255,255,255,.3);}
 .usel{background:var(--surface2);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:10px;padding:4px 8px;outline:none;cursor:pointer;}
-.notif{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--red);margin-left:4px;vertical-align:middle;animation:pulse 1.5s ease-in-out infinite;}
-@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+.pending-ct{display:inline-block;background:var(--red);color:#fff;font-family:var(--mono);font-size:8px;border-radius:8px;padding:0 5px;margin-left:5px;vertical-align:middle;}
 .spinner{display:inline-block;width:12px;height:12px;border:2px solid var(--border2);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px;}
 @keyframes spin{to{transform:rotate(360deg);}}
 
-/* WELCOME */
-.welcome{background:var(--bg2);border:1px solid var(--border);padding:2rem;margin-bottom:2rem;display:flex;align-items:center;gap:2rem;}
-.welcome-img{width:80px;height:80px;object-fit:contain;filter:drop-shadow(0 0 15px rgba(58,123,213,.4));flex-shrink:0;}
-.welcome-title{font-family:var(--head);font-size:38px;letter-spacing:4px;color:var(--accent);}
-.welcome-sub{font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:2px;margin-top:4px;}
-.welcome-body{font-size:14px;color:var(--text2);margin-top:.75rem;line-height:1.7;}
-
-/* ─── REGISTER / PENDING ─── */
-.login-switch{font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:1px;margin-top:1.25rem;cursor:pointer;}
-.login-switch span{color:var(--accent);text-decoration:underline;cursor:pointer;}
-.reg-title{font-family:var(--head);font-size:20px;letter-spacing:6px;color:var(--green);margin-bottom:3px;}
-.pending-box{background:rgba(75,200,122,.05);border:1px solid var(--green-dim);padding:1.5rem;text-align:center;margin-top:1rem;}
-.pending-box .pi{font-family:var(--head);font-size:56px;color:var(--green);line-height:1;}
-.pending-box .pt{font-family:var(--mono);font-size:11px;color:var(--green);letter-spacing:2px;margin-top:.5rem;}
-.pending-box .ps{font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:1px;margin-top:.75rem;line-height:2;}
+/* SYNC BAR */
 .sync-bar{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:1px solid var(--border);padding:4px 1.5rem;font-family:var(--mono);font-size:9px;color:var(--text3);letter-spacing:1px;display:flex;align-items:center;gap:.5rem;z-index:100;}
 .sync-dot{width:6px;height:6px;border-radius:50%;background:var(--green);flex-shrink:0;}
 .sync-dot.syncing{background:var(--amber);animation:pulse 1s ease-in-out infinite;}
 .sync-dot.err{background:var(--red);}
-/* pending users badge on HC/Admin panels */
-.pending-ct{display:inline-block;background:var(--red);color:#fff;font-family:var(--mono);font-size:8px;border-radius:8px;padding:0 5px;margin-left:5px;vertical-align:middle;}
+
+/* TOAST */
+.toast-area{position:fixed;top:70px;right:18px;z-index:400;display:flex;flex-direction:column;gap:8px;pointer-events:none;}
+.toast{background:var(--surface);border:1px solid var(--border2);padding:.75rem 1.1rem;font-family:var(--mono);font-size:11px;letter-spacing:1px;animation:toastIn .3s ease;pointer-events:all;max-width:300px;}
+.toast.ok{border-color:var(--green-dim);color:var(--green);}
+.toast.info{border-color:var(--accent-dim);color:var(--accent);}
+.toast.err{border-color:var(--red-dim);color:var(--red);}
+@keyframes toastIn{from{opacity:0;transform:translateX(20px);}to{opacity:1;transform:none;}}
 
 @media(max-width:768px){
   .layout{grid-template-columns:1fr;}
   .sidebar{position:static;height:auto;border-right:none;border-bottom:1px solid var(--border);}
   .dept-name{font-size:32px;}
-  .frow,.frow3{grid-template-columns:1fr;}
-  .welcome{flex-direction:column;gap:1rem;text-align:center;}
+  .frow{grid-template-columns:1fr;}
   .dept-hdr{flex-direction:column;gap:1rem;}
   .dept-nums{justify-content:flex-start;}
 }
 </style>
 </head>
 <body>
-<!-- ══════════════ LOGIN / REGISTER ══════════════ -->
-<div class="login-overlay" id="loginOverlay">
-  <div class="login-box">
-    <img class="login-logo-img" id="loginImg" src="" alt="" style="display:none;">
-    <div class="login-logo-fallback" id="loginFallback">FUDT</div>
 
-    <!-- LOGIN PANEL -->
+<!-- ══ SETUP SCREEN ══ -->
+<div class="setup-overlay" id="setupOverlay">
+  <div class="setup-box">
+    <div class="setup-title">SUPABASE SETUP</div>
+    <div class="setup-sub">One-time configuration · Takes 2 minutes</div>
+    <div class="setup-steps">
+      <strong>Step 1</strong> — Go to <a href="https://supabase.com" target="_blank">supabase.com</a> and create a free project.<br>
+      <strong>Step 2</strong> — In your project, go to <strong>SQL Editor</strong> and run the SQL from the box below.<br>
+      <strong>Step 3</strong> — Go to <strong>Project Settings → API</strong> and copy your <strong>Project URL</strong> and <strong>anon/public key</strong>.<br>
+      <strong>Step 4</strong> — Paste them below and click Connect.<br><br>
+      <strong>SQL to run in Supabase SQL Editor:</strong>
+    </div>
+    <textarea class="fta" style="font-size:10px;min-height:160px;margin-bottom:1rem;color:var(--gold);" readonly id="setupSQL"></textarea>
+    <div class="fg"><label class="fl">Supabase Project URL</label><input class="fi" id="sbUrl" placeholder="https://usoibvfenklsidyzsuty.supabase.co"></div>
+    <div class="fg"><label class="fl">Supabase Anon/Public Key</label><input class="fi" id="sbKey" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVzb2lidmZlbmtsc2lkeXpzdXR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyOTU5NTAsImV4cCI6MjA5Mzg3MTk1MH0.CSpQZKG20pXs92rmespKUH5lEDJa5rA8ywI23dwk1tM..."></div>
+    <div class="login-err" id="setupErr" style="display:none;"></div>
+    <button class="fbtn" style="width:100%;margin-top:.5rem;" onclick="connectSupabase()">▶ CONNECT &amp; CONTINUE</button>
+  </div>
+</div>
+
+<!-- ══ LOGIN / REGISTER ══ -->
+<div class="login-overlay" id="loginOverlay" style="display:none;">
+  <div class="login-box">
+    <div class="login-logo-fallback" id="loginFallback">FUDT</div>
     <div id="panelLogin">
       <div class="login-title">DEPARTMENT TOOLKIT</div>
       <div class="login-sub">FiveM Universal · Secure Access Portal</div>
@@ -278,8 +299,6 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
       <button class="login-btn" onclick="doLogin()">▶ AUTHENTICATE</button>
       <div class="login-switch">No account? <span onclick="showPanel('register')">Create one here →</span></div>
     </div>
-
-    <!-- REGISTER PANEL -->
     <div id="panelRegister" style="display:none;">
       <div class="reg-title">CREATE ACCOUNT</div>
       <div class="login-sub">Choose your credentials · Await role assignment</div>
@@ -292,20 +311,18 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
       <button class="login-btn" style="background:var(--green-dim);border-color:var(--green);color:var(--green);" onclick="doRegister()">▶ CREATE ACCOUNT</button>
       <div class="login-switch"><span onclick="showPanel('login')">← Back to login</span></div>
     </div>
-
-    <!-- PENDING PANEL -->
     <div id="panelPending" style="display:none;">
       <div class="pending-box">
         <div class="pi">⏳</div>
         <div class="pt">ACCOUNT PENDING APPROVAL</div>
-        <div class="ps">Your account has been created.<br>An <strong style="color:var(--text2);">Admin or Department High Command</strong><br>must assign you a department role<br>before you can log in.<br><br>Contact your HC to get approved.</div>
+        <div class="ps">Your account has been created.<br>An <strong style="color:var(--text2);">Admin or Department High Command</strong><br>must assign you a department role.<br>Contact your HC to get approved.</div>
       </div>
       <div class="login-switch" style="margin-top:1.5rem;"><span onclick="showPanel('login')">← Back to login</span></div>
     </div>
   </div>
 </div>
 
-<!-- ══════════════ ADMIN MODAL ══════════════ -->
+<!-- ══ ADMIN MODAL ══ -->
 <div class="modal-ov" id="modalAdmin">
   <div class="modal">
     <div class="modal-hdr">
@@ -320,17 +337,13 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
         <button class="mtab" onclick="aTab('users',this)">User Accounts</button>
         <button class="mtab" onclick="aTab('pending',this)">Pending <span class="pending-ct" id="adminPendingCt" style="display:none;">0</span></button>
         <button class="mtab" onclick="aTab('allreq',this)">All Requests</button>
-        <button class="mtab" onclick="aTab('sheets',this)">Google Sheets</button>
       </div>
-
-      <!-- DEPARTMENTS -->
       <div class="mpanel active" id="ap-depts">
         <div class="frow">
           <div class="fg"><label class="fl">Department Full Name</label><input class="fi" id="aDeptName" placeholder="e.g. San Andreas Highway Patrol"></div>
           <div class="fg"><label class="fl">Abbreviation</label><input class="fi" id="aDeptAbbr" placeholder="e.g. SAHP" maxlength="8"></div>
         </div>
-        <div class="fg">
-          <label class="fl">Department Color</label>
+        <div class="fg"><label class="fl">Department Color</label>
           <div class="color-grid" id="colorGrid">
             <div class="color-dot sel" style="background:#3a7bd5" data-c="#3a7bd5"></div>
             <div class="color-dot" style="background:#c84b4b" data-c="#c84b4b"></div>
@@ -342,8 +355,6 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
             <div class="color-dot" style="background:#c84b8a" data-c="#c84b8a"></div>
             <div class="color-dot" style="background:#e05555" data-c="#e05555"></div>
             <div class="color-dot" style="background:#55b0e0" data-c="#55b0e0"></div>
-            <div class="color-dot" style="background:#a0c040" data-c="#a0c040"></div>
-            <div class="color-dot" style="background:#e0b040" data-c="#e0b040"></div>
           </div>
         </div>
         <div class="fg"><label class="fl">Department Type</label>
@@ -358,8 +369,6 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
         <button class="fbtn" style="width:100%;" onclick="adminAddDept()">+ CREATE DEPARTMENT</button>
         <div id="aDeptList" style="margin-top:1rem;"></div>
       </div>
-
-      <!-- RANKS -->
       <div class="mpanel" id="ap-ranks">
         <div class="fg"><label class="fl">Select Department</label><select class="fs" id="aRankDept" onchange="renderARankList()"></select></div>
         <div class="frow">
@@ -368,7 +377,7 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
         </div>
         <div class="fg"><label class="fl">Rank Tier</label>
           <select class="fs" id="aRankTier">
-            <option value="hc">High Command (01-05)</option>
+            <option value="hc">High Command</option>
             <option value="thc">Trial High Command</option>
             <option value="lc">Low Command</option>
             <option value="sup">Supervisor</option>
@@ -379,8 +388,6 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
         <button class="fbtn" style="width:100%;" onclick="adminAddRank()">+ ADD RANK</button>
         <div id="aRankList" style="margin-top:1rem;"></div>
       </div>
-
-      <!-- ADD MEMBER -->
       <div class="mpanel" id="ap-members">
         <div class="frow">
           <div class="fg"><label class="fl">Full Name</label><input class="fi" id="aMemName" placeholder="J. Smith"></div>
@@ -404,26 +411,24 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
         <div class="fg"><label class="fl">Discord Username (optional)</label><input class="fi" id="aMemDiscord" placeholder="username#0000"></div>
         <button class="fbtn" style="width:100%;" onclick="adminAddMember()">+ ADD TO ROSTER</button>
       </div>
-
-      <!-- USER ACCOUNTS -->
       <div class="mpanel" id="ap-users">
         <div class="infobox">
           <strong>ROLES EXPLAINED</strong><br>
-          ADMIN — Full access to everything, all departments<br>
-          HIGH COMMAND — Can manage their assigned dept: add/edit members, approve dept requests<br>
-          MEMBER — Can only VIEW their assigned department's roster + submit LOA/movement requests
+          ADMIN — Full access, all departments<br>
+          HIGH COMMAND — Manage their assigned dept: add/edit members, approve dept requests, approve pending users<br>
+          MEMBER — View their assigned department roster + submit LOA/movement requests
         </div>
         <div class="frow">
           <div class="fg"><label class="fl">Username</label><input class="fi" id="aNewUser" placeholder="john.doe" autocomplete="off"></div>
-          <div class="fg"><label class="fl">Password</label><input class="fi" id="aNewPass" type="password" placeholder="••••••••" autocomplete="off"></div>
+          <div class="fg"><label class="fl">Password</label><input class="fi" id="aNewPass" type="password" autocomplete="off"></div>
         </div>
         <div class="frow">
           <div class="fg"><label class="fl">Display Name</label><input class="fi" id="aNewDisplay" placeholder="J. Smith"></div>
           <div class="fg"><label class="fl">Role</label>
             <select class="fs" id="aNewRole">
-              <option value="member">Member (view own dept)</option>
-              <option value="hc">High Command (manage own dept)</option>
-              <option value="admin">Admin (full access)</option>
+              <option value="member">Member</option>
+              <option value="hc">High Command</option>
+              <option value="admin">Admin</option>
             </select>
           </div>
         </div>
@@ -431,79 +436,21 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
         <button class="fbtn" style="width:100%;" onclick="adminCreateUser()">+ CREATE USER ACCOUNT</button>
         <div id="aUserList" style="margin-top:1.5rem;"></div>
       </div>
-
-      <!-- PENDING ACCOUNTS -->
       <div class="mpanel" id="ap-pending">
         <div class="infobox">
           <strong>PENDING REGISTRATIONS</strong><br>
-          These users created their own accounts and are waiting for a department role assignment.<br>
-          Select their department and role, then approve — or deny to remove them.
+          Users who self-registered and are waiting for a role assignment.
         </div>
         <div id="aPendingList"><div class="empty">No pending registrations.</div></div>
       </div>
-
-      <!-- ALL REQUESTS -->
       <div class="mpanel" id="ap-allreq">
-        <div id="aAllReqList"></div>
-      </div>
-
-      <!-- GOOGLE SHEETS -->
-      <div class="mpanel" id="ap-sheets">
-        <div class="infobox">
-          <strong>GOOGLE SHEETS INTEGRATION</strong><br>
-          Sign in with the Google account that owns your roster sheet.<br>
-          After connecting, paste your <strong>Spreadsheet ID</strong> (from the URL) and click <strong>Import</strong>.<br><br>
-          Sheet columns must be in order:<br>
-          &nbsp;&nbsp;A: Name &nbsp;|&nbsp; B: Badge &nbsp;|&nbsp; C: Department &nbsp;|&nbsp; D: Rank &nbsp;|&nbsp; E: Join Date &nbsp;|&nbsp; F: Status<br>
-          Status values: <strong>active</strong> / <strong>needs</strong> / <strong>inactive</strong> / <strong>loa</strong>
-        </div>
-
-        <!-- Step 1: Google Sign-In -->
-        <div class="fg" id="gAuthRow">
-          <label class="fl">Step 1 — Connect Google Account</label>
-          <div id="gSignInBtn" style="margin-top:6px;"></div>
-          <div id="gSignedInAs" style="display:none;font-family:var(--mono);font-size:10px;color:var(--green);margin-top:6px;letter-spacing:1px;"></div>
-        </div>
-
-        <!-- Step 2: Sheet ID -->
-        <div class="fg">
-          <label class="fl">Step 2 — Spreadsheet ID</label>
-          <input class="fi" id="aSheetId" placeholder="e.g. 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms">
-          <div style="font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:4px;letter-spacing:1px;">
-            Find it in the sheet URL: docs.google.com/spreadsheets/d/<strong style="color:var(--text2);">THIS_PART</strong>/edit
-          </div>
-        </div>
-
-        <div class="fg">
-          <label class="fl">Sheet / Tab Name (default: Sheet1)</label>
-          <input class="fi" id="aSheetTab" placeholder="Sheet1" value="Sheet1">
-        </div>
-
-        <div class="fg"><label class="fl">Auto-Refresh</label>
-          <select class="fs" id="aRefresh">
-            <option value="0">Manual only</option>
-            <option value="60">Every 1 minute</option>
-            <option value="300">Every 5 minutes</option>
-            <option value="600">Every 10 minutes</option>
-            <option value="1800">Every 30 minutes</option>
-          </select>
-        </div>
-
-        <div class="fg"><label class="fl">Logo Image URL (optional)</label>
-          <input class="fi" id="aLogoUrl" placeholder="https://i.imgur.com/yourlogo.png">
-        </div>
-
-        <div style="display:flex;gap:.75rem;flex-wrap:wrap;">
-          <button class="fbtn" onclick="gSheetsImport()">▶ IMPORT FROM SHEET</button>
-          <button class="fbtn" style="background:var(--green-dim);border-color:var(--green);color:var(--green);" onclick="gSheetsExport()">↑ EXPORT ROSTER TO SHEET</button>
-        </div>
-        <div id="aSheetMsg" style="margin-top:1rem;font-family:var(--mono);font-size:10px;letter-spacing:1px;"></div>
+        <div id="aAllReqList"><div class="empty">No requests yet.</div></div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ══════════════ HC MODAL ══════════════ -->
+<!-- ══ HC MODAL ══ -->
 <div class="modal-ov" id="modalHC">
   <div class="modal">
     <div class="modal-hdr">
@@ -514,10 +461,8 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
       <div class="mtabs">
         <button class="mtab gold active" onclick="hTab('roster',this)">Edit Roster</button>
         <button class="mtab gold" onclick="hTab('pending',this)">Pending <span class="pending-ct" id="hcPendingCt" style="display:none;">0</span></button>
-        <button class="mtab gold" onclick="hTab('hcreqs',this)">Dept Requests</button>
+        <button class="mtab gold" id="hcReqTab" onclick="hTab('hcreqs',this)">Dept Requests <span class="pending-ct" id="hcReqCt" style="display:none;">0</span></button>
       </div>
-
-      <!-- HC EDIT ROSTER -->
       <div class="mpanel active" id="hp-roster">
         <div class="infobox" id="hcDeptInfo">Loading your department...</div>
         <div class="frow">
@@ -542,32 +487,22 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
         <button class="fbtn gold" style="width:100%;" onclick="hcAddMember()">+ ADD MEMBER TO MY DEPARTMENT</button>
         <div id="hMemberList" style="margin-top:1.5rem;"></div>
       </div>
-
-      <!-- HC PENDING USERS -->
       <div class="mpanel" id="hp-pending">
-        <div class="infobox">
-          Users who registered themselves. Assign them a role to grant access to your department.<br>
-          You can only assign <strong>Member</strong> or <strong>High Command</strong> roles.
-        </div>
+        <div class="infobox">Assign a role to grant access to your department. You can assign Member or High Command roles.</div>
         <div id="hPendingList"><div class="empty">No pending registrations for your dept.</div></div>
       </div>
-
-      <!-- HC DEPT REQUESTS -->
       <div class="mpanel" id="hp-hcreqs">
-        <div id="hReqList"></div>
+        <div id="hReqList"><div class="empty">No requests for your department yet.</div></div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ══════════════ APP ══════════════ -->
+<!-- ══ APP ══ -->
 <div class="wrap" id="appWrap" style="display:none;">
-
-  <!-- TOPBAR -->
   <div class="topbar">
     <div class="tb-left">
-      <img class="tb-logo-img" id="topLogoImg" src="" alt="" style="display:none;">
-      <div class="tb-title" id="topLogoText">FUDT</div>
+      <div class="tb-title">FUDT</div>
       <div class="tb-tag">DEPARTMENT TOOLKIT</div>
     </div>
     <div class="tb-right">
@@ -575,25 +510,20 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
       <div class="tb-user" id="tbUser" style="display:none;"></div>
       <div class="tb-role" id="tbRole" style="display:none;"></div>
       <button class="tb-btn btn-req" id="btnReq" onclick="gotoPage('loa')" style="display:none;">📋 REQUESTS</button>
-      <button class="tb-btn btn-hcp" id="btnHC" onclick="openHC()" style="display:none;">⭐ HC PANEL</button>
-      <button class="tb-btn btn-adm" id="btnAdm" onclick="openAdmin()" style="display:none;">⚙ ADMIN</button>
+      <button class="tb-btn btn-hcp" id="btnHC" onclick="openHC()" style="display:none;">⭐ HC PANEL<span class="notif-dot" id="hcNotifDot"></span></button>
+      <button class="tb-btn btn-adm" id="btnAdm" onclick="openAdmin()" style="display:none;">⚙ ADMIN<span class="notif-dot" id="admNotifDot"></span></button>
       <button class="tb-btn btn-out" onclick="doSignout()">SIGN OUT</button>
     </div>
   </div>
-
-  <!-- NAV TABS -->
   <div class="navtabs">
     <button class="ntab active" id="ntRoster" onclick="gotoPage('roster')">📁 ROSTER</button>
     <button class="ntab tloa" id="ntLoa" onclick="gotoPage('loa')">📝 LOA REQUEST</button>
     <button class="ntab tmov" id="ntMove" onclick="gotoPage('move')">🔄 ROSTER MOVEMENT</button>
   </div>
-
   <div class="layout">
-    <!-- SIDEBAR -->
     <div class="sidebar">
       <span class="sb-label">Departments</span>
       <div class="sb-depts" id="sbDepts"></div>
-      <div class="sb-locked" id="sbLocked" style="display:none;">🔒 Access restricted<br>to your assigned<br>department only</div>
       <div class="sb-stats">
         <div class="sstat"><span>Total Personnel</span><span class="sstat-v" id="stTotal">0</span></div>
         <div class="sstat"><span>Active</span><span class="sstat-v" id="stActive" style="color:var(--green);">0</span></div>
@@ -602,16 +532,10 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
         <div class="sstat"><span>Needs Imprv.</span><span class="sstat-v" id="stNeeds" style="color:var(--amber);">0</span></div>
       </div>
     </div>
-
-    <!-- MAIN AREA -->
     <div class="main">
-
-      <!-- ROSTER PAGE -->
       <div class="page active" id="pg-roster">
         <div id="rosterMain"><div class="empty">← Select a department from the sidebar</div></div>
       </div>
-
-      <!-- LOA PAGE -->
       <div class="page" id="pg-loa">
         <div class="form-hdr">
           <div class="form-title" style="color:var(--blue);">LOA REQUEST</div>
@@ -631,7 +555,7 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
             <div class="fg"><label class="fl">LOA Start Date</label><input class="fi" id="loaStart" type="date"></div>
             <div class="fg"><label class="fl">Expected Return Date</label><input class="fi" id="loaEnd" type="date"></div>
           </div>
-          <div class="fg"><label class="fl">Reason for LOA</label><textarea class="fta" id="loaReason" placeholder="Provide a brief reason for your leave of absence..."></textarea></div>
+          <div class="fg"><label class="fl">Reason for LOA</label><textarea class="fta" id="loaReason" placeholder="Provide a brief reason..."></textarea></div>
           <div class="fg"><label class="fl">Discord Username</label><input class="fi" id="loaDiscord" placeholder="username#0000"></div>
           <button class="fbtn" onclick="submitLOA()">▶ SUBMIT LOA REQUEST</button>
           <div class="fmsg" id="loaMsg"></div>
@@ -641,8 +565,6 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
           <div id="myLoaList"><div class="empty">No LOA requests on file.</div></div>
         </div>
       </div>
-
-      <!-- MOVEMENT PAGE -->
       <div class="page" id="pg-move">
         <div class="form-hdr">
           <div class="form-title" style="color:var(--amber);">ROSTER MOVEMENT</div>
@@ -676,7 +598,7 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
             <div class="fg"><label class="fl">New Rank</label><input class="fi" id="movNewRank" placeholder="Rank after movement"></div>
             <div class="fg"><label class="fl">Effective Date</label><input class="fi" id="movEffDate" type="date"></div>
           </div>
-          <div class="fg"><label class="fl">Reason / Additional Notes</label><textarea class="fta" id="movReason" placeholder="Provide context for this roster movement..."></textarea></div>
+          <div class="fg"><label class="fl">Reason / Additional Notes</label><textarea class="fta" id="movReason" placeholder="Provide context..."></textarea></div>
           <div class="fg"><label class="fl">Discord Username</label><input class="fi" id="movDiscord" placeholder="username#0000"></div>
           <button class="fbtn amber" onclick="submitMOV()">▶ SUBMIT MOVEMENT REQUEST</button>
           <div class="fmsg" id="movMsg"></div>
@@ -686,198 +608,381 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
           <div id="myMovList"><div class="empty">No movement requests on file.</div></div>
         </div>
       </div>
-
-    </div><!-- /main -->
-  </div><!-- /layout -->
-</div><!-- /wrap -->
-
-<!-- SYNC STATUS BAR -->
-<div class="sync-bar" id="syncBar">
-  <div class="sync-dot" id="syncDot"></div>
-  <span id="syncMsg">CONNECTED · Live shared data</span>
+    </div>
+  </div>
 </div>
+
+<div class="sync-bar" id="syncBar">
+  <div class="sync-dot syncing" id="syncDot"></div>
+  <span id="syncMsg">CONNECTING...</span>
+</div>
+<div class="toast-area" id="toastArea"></div>
 
 <script>
 // ════════════════════════════════════════════════════════
-//  FIREBASE CONFIG — free Realtime Database, true live sync
-//  One shared DB for all users of this toolkit.
+//  CONFIG STORAGE
 // ════════════════════════════════════════════════════════
-const FB_URL = 'https://fudt-toolkit-default-rtdb.firebaseio.com';
+const CFG_KEY = 'fudt_sb_config';
 
-const ADMIN_PASS = 'ngisontop';
+function loadConfig(){
+  try{ return JSON.parse(localStorage.getItem(CFG_KEY)||'null'); }catch(e){ return null; }
+}
+function saveConfig(url, key){
+  localStorage.setItem(CFG_KEY, JSON.stringify({url,key}));
+}
+
+// ════════════════════════════════════════════════════════
+//  SETUP SQL
+// ════════════════════════════════════════════════════════
+const SETUP_SQL = `
+-- Run this once in your Supabase SQL Editor
+
+create table if not exists fudt_depts (
+  id text primary key,
+  name text not null,
+  abbr text not null,
+  color text default '#3a7bd5',
+  type text default 'leo',
+  created_at timestamptz default now()
+);
+
+create table if not exists fudt_ranks (
+  id text primary key,
+  dept_id text not null,
+  name text not null,
+  ord integer default 10,
+  tier text default 'patrol'
+);
+
+create table if not exists fudt_members (
+  id text primary key,
+  name text not null,
+  badge text default '',
+  dept text not null,
+  rank text not null,
+  status text default 'active',
+  join_date text default '',
+  discord text default '',
+  updated_at timestamptz default now()
+);
+
+create table if not exists fudt_users (
+  id text primary key,
+  username text unique not null,
+  password text not null,
+  display_name text not null,
+  role text default 'member',
+  dept_id text default 'all'
+);
+
+create table if not exists fudt_pending (
+  id text primary key,
+  username text unique not null,
+  password text not null,
+  display_name text not null,
+  ts bigint default extract(epoch from now())*1000
+);
+
+create table if not exists fudt_loas (
+  id text primary key,
+  name text not null,
+  badge text default '',
+  dept text not null,
+  rank text default '',
+  start_date text default '',
+  end_date text default '',
+  reason text default '',
+  discord text default '',
+  status text default 'pending',
+  by_user text default '',
+  ts bigint default extract(epoch from now())*1000
+);
+
+create table if not exists fudt_movs (
+  id text primary key,
+  name text not null,
+  badge text default '',
+  dept_from text not null,
+  rank_from text default '',
+  mov_type text default 'transfer',
+  dept_to text default '',
+  rank_to text default '',
+  eff_date text default '',
+  reason text default '',
+  discord text default '',
+  status text default 'pending',
+  by_user text default '',
+  ts bigint default extract(epoch from now())*1000
+);
+
+-- Enable realtime for all tables
+alter publication supabase_realtime add table fudt_depts;
+alter publication supabase_realtime add table fudt_ranks;
+alter publication supabase_realtime add table fudt_members;
+alter publication supabase_realtime add table fudt_users;
+alter publication supabase_realtime add table fudt_pending;
+alter publication supabase_realtime add table fudt_loas;
+alter publication supabase_realtime add table fudt_movs;
+
+-- Disable RLS so anon key works (fine for private community tools)
+alter table fudt_depts disable row level security;
+alter table fudt_ranks disable row level security;
+alter table fudt_members disable row level security;
+alter table fudt_users disable row level security;
+alter table fudt_pending disable row level security;
+alter table fudt_loas disable row level security;
+alter table fudt_movs disable row level security;
+
+-- Seed default admin account
+insert into fudt_users (id, username, password, display_name, role, dept_id)
+values ('u_admin', 'admin', 'ngisontop', 'Administrator', 'admin', 'all')
+on conflict (username) do nothing;
+`.trim();
+
+document.getElementById('setupSQL').value = SETUP_SQL;
+
+// ════════════════════════════════════════════════════════
+//  SUPABASE CLIENT
+// ════════════════════════════════════════════════════════
+let SB = null;
+let SUBS = [];
+
+async function connectSupabase(){
+  const url = document.getElementById('sbUrl').value.trim().replace(/\/$/, '');
+  const key = document.getElementById('sbKey').value.trim();
+  const errEl = document.getElementById('setupErr');
+  const showErr = msg => { errEl.textContent = '⚠ ' + msg; errEl.style.display = 'block'; };
+
+  if(!url || !key){ showErr('Both URL and key are required.'); return; }
+  if(!url.includes('supabase.co')){ showErr('URL must be a Supabase project URL (*.supabase.co).'); return; }
+
+  setSyncStatus('syncing','Testing connection...');
+  try{
+    SB = supabase.createClient(url, key);
+    // Quick test
+    const { error } = await SB.from('fudt_users').select('id').limit(1);
+    if(error) throw new Error(error.message);
+    saveConfig(url, key);
+    document.getElementById('setupOverlay').classList.add('hidden');
+    document.getElementById('loginOverlay').style.display = 'flex';
+    setSyncStatus('ok','CONNECTED · Supabase live');
+    await loadAll();
+    await seed();
+  } catch(e){
+    showErr('Connection failed: ' + e.message + '. Did you run the SQL above?');
+    setSyncStatus('err','CONNECTION FAILED');
+  }
+}
+
+function initFromConfig(cfg){
+  SB = supabase.createClient(cfg.url, cfg.key);
+}
+
+// ════════════════════════════════════════════════════════
+//  STATE
+// ════════════════════════════════════════════════════════
 let CU = null;
 let AD = null;
 let CC = '#3a7bd5';
-let FB_LISTENERS = []; // SSE connections for live updates
 
 const S = {
-  depts:[], ranks:{}, members:[], users:[], pending:[],
-  loas:[], movs:[], logo:'', sheetsUrl:'',
+  depts: [], ranks: {}, members: [], users: [], pending: [], loas: [], movs: []
 };
 
 // ════════════════════════════════════════════════════════
-//  FIREBASE REST + SSE LAYER
+//  DB HELPERS
 // ════════════════════════════════════════════════════════
-function setSyncStatus(state, msg){
-  const dot = document.getElementById('syncDot');
-  const m   = document.getElementById('syncMsg');
-  dot.className = 'sync-dot' + (state==='syncing'?' syncing':state==='err'?' err':'');
-  m.textContent = msg;
+async function dbGet(table){
+  const { data, error } = await SB.from(table).select('*');
+  if(error){ console.warn('dbGet error', table, error.message); return []; }
+  return data || [];
 }
 
-async function fbGet(path){
-  try{
-    const r = await fetch(`${FB_URL}/${path}.json`);
-    if(!r.ok) throw new Error(r.status);
-    return await r.json();
-  } catch(e){ return null; }
+async function dbUpsert(table, row){
+  const { error } = await SB.from(table).upsert(row, { onConflict:'id' });
+  if(error) console.warn('dbUpsert error', table, error.message);
+  return !error;
 }
 
-async function fbSet(path, val){
-  try{
-    const r = await fetch(`${FB_URL}/${path}.json`, {
-      method:'PUT', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify(val)
-    });
-    return r.ok;
-  } catch(e){ return false; }
+async function dbDelete(table, id){
+  const { error } = await SB.from(table).delete().eq('id', id);
+  if(error) console.warn('dbDelete error', table, error.message);
+  return !error;
 }
 
+async function dbUpdate(table, id, updates){
+  const { error } = await SB.from(table).update(updates).eq('id', id);
+  if(error) console.warn('dbUpdate error', table, error.message);
+  return !error;
+}
+
+// ════════════════════════════════════════════════════════
+//  LOAD ALL DATA
+// ════════════════════════════════════════════════════════
 async function loadAll(){
-  setSyncStatus('syncing','CONNECTING...');
-  const data = await fbGet('fudt');
-  if(data){
-    if(data.depts)    S.depts    = data.depts;
-    if(data.ranks)    S.ranks    = data.ranks;
-    if(data.members)  S.members  = data.members;
-    if(data.users)    S.users    = data.users;
-    if(data.pending)  S.pending  = Array.isArray(data.pending)?data.pending:Object.values(data.pending||{});
-    if(data.loas)     S.loas     = Array.isArray(data.loas)?data.loas:Object.values(data.loas||{});
-    if(data.movs)     S.movs     = Array.isArray(data.movs)?data.movs:Object.values(data.movs||{});
-    if(typeof data.logo==='string') S.logo = data.logo;
-    if(typeof data.sheetsUrl==='string') S.sheetsUrl = data.sheetsUrl;
+  setSyncStatus('syncing','LOADING...');
+  try{
+    const [depts, ranks, members, users, pending, loas, movs] = await Promise.all([
+      dbGet('fudt_depts'), dbGet('fudt_ranks'), dbGet('fudt_members'),
+      dbGet('fudt_users'), dbGet('fudt_pending'), dbGet('fudt_loas'), dbGet('fudt_movs')
+    ]);
+    S.depts   = depts.map(d=>({id:d.id,name:d.name,abbr:d.abbr,color:d.color||'#3a7bd5',type:d.type||'leo'}));
+    S.ranks   = {};
+    ranks.forEach(r=>{ if(!S.ranks[r.dept_id]) S.ranks[r.dept_id]=[]; S.ranks[r.dept_id].push({id:r.id,name:r.name,order:r.ord,tier:r.tier}); });
+    S.members = members.map(m=>({id:m.id,name:m.name,badge:m.badge||'',dept:m.dept,rank:m.rank,status:m.status||'active',date:m.join_date||'',discord:m.discord||''}));
+    S.users   = users.map(u=>({id:u.id,username:u.username,password:u.password,displayName:u.display_name,role:u.role,deptId:u.dept_id}));
+    S.pending = pending.map(p=>({id:p.id,username:p.username,password:p.password,displayName:p.display_name,ts:p.ts}));
+    S.loas    = loas.map(loaMap);
+    S.movs    = movs.map(movMap);
+    setSyncStatus('ok','LIVE · Supabase realtime');
+  } catch(e){
+    setSyncStatus('err','LOAD ERROR: '+e.message);
   }
-  setSyncStatus('ok','LIVE · Firebase synced');
 }
 
-async function save(keys){
-  setSyncStatus('syncing','SAVING...');
-  const toSave = keys || ['depts','ranks','members','users','pending','loas','movs','logo','sheetsUrl'];
-  const obj = {};
-  toSave.forEach(k=>{ obj[k]=S[k]; });
-  // PATCH each key individually so we don't overwrite unrelated keys
-  const results = await Promise.all(toSave.map(k=>fbSet(`fudt/${k}`, S[k])));
-  const ok = results.every(Boolean);
-  setSyncStatus(ok?'ok':'err', ok?'LIVE · Firebase synced':'SAVE ERROR — check connection');
-}
-
-// ── Live SSE listener for a single path ──
-function fbListen(path, cb){
-  const es = new EventSource(`${FB_URL}/${path}.json`);
-  es.addEventListener('put', e=>{
-    try{ const d=JSON.parse(e.data); cb(d.data); }catch(_){}
-  });
-  es.onerror = ()=>{ setSyncStatus('err','CONNECTION LOST — retrying...'); };
-  FB_LISTENERS.push(es);
-  return es;
-}
-
-function startLiveListeners(){
-  stopLiveListeners();
-  // Listen to each critical path separately for granular updates
-  fbListen('fudt/members', data=>{
-    if(!data) return;
-    const fresh = Array.isArray(data)?data:Object.values(data);
-    if(JSON.stringify(fresh)!==JSON.stringify(S.members)){
-      S.members=fresh; renderAll(); setSyncStatus('ok','LIVE · Firebase synced');
-    }
-  });
-  fbListen('fudt/loas', data=>{
-    if(!data) return;
-    const fresh = Array.isArray(data)?data:Object.values(data);
-    if(JSON.stringify(fresh)!==JSON.stringify(S.loas)){
-      S.loas=fresh; renderMyLoas(); renderAdminReqs(); renderHCReqs(); setSyncStatus('ok','LIVE · Firebase synced');
-    }
-  });
-  fbListen('fudt/movs', data=>{
-    if(!data) return;
-    const fresh = Array.isArray(data)?data:Object.values(data);
-    if(JSON.stringify(fresh)!==JSON.stringify(S.movs)){
-      S.movs=fresh; renderMyMovs(); renderAdminReqs(); renderHCReqs(); setSyncStatus('ok','LIVE · Firebase synced');
-    }
-  });
-  fbListen('fudt/pending', data=>{
-    const fresh = data?(Array.isArray(data)?data:Object.values(data)):[];
-    if(JSON.stringify(fresh)!==JSON.stringify(S.pending)){
-      S.pending=fresh; updatePendingBadges();
-      const apl=document.getElementById('aPendingList');
-      const hpl=document.getElementById('hPendingList');
-      if(apl) renderPendingList('aPendingList',true);
-      if(hpl) renderPendingList('hPendingList',false);
-      setSyncStatus('ok','LIVE · Firebase synced');
-    }
-  });
-  fbListen('fudt/users', data=>{
-    if(!data) return;
-    const fresh = Array.isArray(data)?data:Object.values(data);
-    if(JSON.stringify(fresh)!==JSON.stringify(S.users)){
-      S.users=fresh;
-      const aul=document.getElementById('aUserList');
-      if(aul) renderAUserList();
-      setSyncStatus('ok','LIVE · Firebase synced');
-    }
-  });
-  fbListen('fudt/depts', data=>{
-    if(!data) return;
-    const fresh = Array.isArray(data)?data:Object.values(data);
-    if(JSON.stringify(fresh)!==JSON.stringify(S.depts)){
-      S.depts=fresh; renderAll(); setSyncStatus('ok','LIVE · Firebase synced');
-    }
-  });
-}
-
-function stopLiveListeners(){
-  FB_LISTENERS.forEach(es=>{ try{ es.close(); }catch(_){} });
-  FB_LISTENERS=[];
-}
+function loaMap(r){ return {id:r.id,name:r.name,badge:r.badge||'',dept:r.dept,rank:r.rank||'',start:r.start_date||'',end:r.end_date||'',reason:r.reason||'',discord:r.discord||'',status:r.status||'pending',by:r.by_user||'',ts:r.ts||Date.now()}; }
+function movMap(r){ return {id:r.id,name:r.name,badge:r.badge||'',deptFrom:r.dept_from,rankFrom:r.rank_from||'',type:r.mov_type||'transfer',deptTo:r.dept_to||'',rankTo:r.rank_to||'',effDate:r.eff_date||'',reason:r.reason||'',discord:r.discord||'',status:r.status||'pending',by:r.by_user||'',ts:r.ts||Date.now()}; }
 
 // ════════════════════════════════════════════════════════
-//  SEED DEMO DATA (only if shared storage is empty)
+//  SEED DEMO DATA
 // ════════════════════════════════════════════════════════
 async function seed(){
-  if(S.depts.length>0) return;
-  S.depts=[
+  if(S.depts.length > 0) return;
+  const depts = [
     {id:'d1',name:'San Andreas Highway Patrol',abbr:'SAHP',color:'#3a7bd5',type:'leo'},
     {id:'d2',name:'Blaine County Sheriffs Office',abbr:'BCSO',color:'#c8923a',type:'leo'},
     {id:'d3',name:'Los Santos Police Department',abbr:'LSPD',color:'#4bc8c8',type:'leo'},
     {id:'d4',name:'Federal Investigation Bureau',abbr:'FIB',color:'#c84b4b',type:'fed'},
     {id:'d5',name:'Armed Forces',abbr:'AF',color:'#4bc87a',type:'dod'},
   ];
-  S.ranks={
-    d1:[{id:'r1a',name:'Commissioner',order:1,tier:'hc'},{id:'r1b',name:'Deputy Commissioner',order:2,tier:'hc'},{id:'r1c',name:'Assistant Commissioner',order:3,tier:'hc'},{id:'r1d',name:'Captain',order:4,tier:'lc'},{id:'r1e',name:'Lieutenant',order:5,tier:'lc'},{id:'r1f',name:'Sergeant',order:6,tier:'sup'},{id:'r1g',name:'Corporal',order:7,tier:'sup'},{id:'r1h',name:'Trooper I',order:8,tier:'patrol'},{id:'r1i',name:'Trooper II',order:9,tier:'patrol'},{id:'r1j',name:'Cadet',order:10,tier:'cadet'}],
-    d2:[{id:'r2a',name:'Sheriff',order:1,tier:'hc'},{id:'r2b',name:'Undersheriff',order:2,tier:'hc'},{id:'r2c',name:'Captain',order:3,tier:'lc'},{id:'r2d',name:'Sergeant',order:4,tier:'sup'},{id:'r2e',name:'Senior Deputy',order:5,tier:'patrol'},{id:'r2f',name:'Deputy',order:6,tier:'patrol'},{id:'r2g',name:'Cadet',order:7,tier:'cadet'}],
-    d3:[{id:'r3a',name:'Chief of Police',order:1,tier:'hc'},{id:'r3b',name:'Deputy Chief',order:2,tier:'hc'},{id:'r3c',name:'Commander',order:3,tier:'lc'},{id:'r3d',name:'Lieutenant',order:4,tier:'sup'},{id:'r3e',name:'Sergeant',order:5,tier:'sup'},{id:'r3f',name:'Officer I',order:6,tier:'patrol'},{id:'r3g',name:'Officer II',order:7,tier:'patrol'},{id:'r3h',name:'Recruit',order:8,tier:'cadet'}],
-    d4:[{id:'r4a',name:'Director',order:1,tier:'hc'},{id:'r4b',name:'Assistant Director',order:2,tier:'hc'},{id:'r4c',name:'Supervisory Special Agent',order:3,tier:'lc'},{id:'r4d',name:'Special Agent',order:4,tier:'patrol'},{id:'r4e',name:'Probationary Agent',order:5,tier:'cadet'}],
-    d5:[{id:'r5a',name:'General (O-10)',order:1,tier:'hc'},{id:'r5b',name:'Colonel (O-6)',order:2,tier:'lc'},{id:'r5c',name:'Major (O-4)',order:3,tier:'lc'},{id:'r5d',name:'Captain (O-3)',order:4,tier:'sup'},{id:'r5e',name:'Staff Sergeant (E-6)',order:5,tier:'patrol'},{id:'r5f',name:'Sergeant (E-5)',order:6,tier:'patrol'},{id:'r5g',name:'Private (E-1)',order:7,tier:'cadet'}],
-  };
-  S.members=[
-    {id:'m01',name:'J. Reeves',badge:'SAHP-001',dept:'d1',rank:'Commissioner',date:'2023-01-15',status:'active',discord:'jreeves#0001'},
-    {id:'m02',name:'M. Torres',badge:'SAHP-012',dept:'d1',rank:'Captain',date:'2023-03-08',status:'active',discord:''},
-    {id:'m03',name:'K. Walsh',badge:'SAHP-027',dept:'d1',rank:'Sergeant',date:'2023-06-20',status:'loa',discord:''},
-    {id:'m04',name:'D. Park',badge:'SAHP-033',dept:'d1',rank:'Trooper I',date:'2023-09-01',status:'active',discord:''},
-    {id:'m07',name:'A. Castillo',badge:'BCSO-001',dept:'d2',rank:'Sheriff',date:'2022-11-05',status:'active',discord:''},
-    {id:'m08',name:'T. Morgan',badge:'BCSO-008',dept:'d2',rank:'Deputy',date:'2023-02-14',status:'active',discord:''},
-    {id:'m10',name:'C. Rivera',badge:'LSPD-001',dept:'d3',rank:'Chief of Police',date:'2022-05-18',status:'active',discord:''},
-    {id:'m12',name:'G. Brooks',badge:'FIB-001',dept:'d4',rank:'Director',date:'2022-08-14',status:'active',discord:''},
-    {id:'m14',name:'N. Stone',badge:'AF-010',dept:'d5',rank:'General (O-10)',date:'2022-03-01',status:'active',discord:''},
+  for(const d of depts) await SB.from('fudt_depts').upsert(d,{onConflict:'id'});
+  const ranks = [
+    {id:'r1a',dept_id:'d1',name:'Commissioner',ord:1,tier:'hc'},
+    {id:'r1b',dept_id:'d1',name:'Deputy Commissioner',ord:2,tier:'hc'},
+    {id:'r1c',dept_id:'d1',name:'Captain',ord:3,tier:'lc'},
+    {id:'r1d',dept_id:'d1',name:'Sergeant',ord:4,tier:'sup'},
+    {id:'r1e',dept_id:'d1',name:'Trooper I',ord:5,tier:'patrol'},
+    {id:'r1f',dept_id:'d1',name:'Cadet',ord:6,tier:'cadet'},
+    {id:'r2a',dept_id:'d2',name:'Sheriff',ord:1,tier:'hc'},
+    {id:'r2b',dept_id:'d2',name:'Undersheriff',ord:2,tier:'hc'},
+    {id:'r2c',dept_id:'d2',name:'Deputy',ord:3,tier:'patrol'},
+    {id:'r3a',dept_id:'d3',name:'Chief of Police',ord:1,tier:'hc'},
+    {id:'r3b',dept_id:'d3',name:'Commander',ord:2,tier:'lc'},
+    {id:'r3c',dept_id:'d3',name:'Officer',ord:3,tier:'patrol'},
+    {id:'r4a',dept_id:'d4',name:'Director',ord:1,tier:'hc'},
+    {id:'r4b',dept_id:'d4',name:'Special Agent',ord:2,tier:'patrol'},
+    {id:'r5a',dept_id:'d5',name:'General',ord:1,tier:'hc'},
+    {id:'r5b',dept_id:'d5',name:'Private',ord:2,tier:'patrol'},
   ];
-  S.users=[
-    {username:'admin',password:'ngisontop',displayName:'Administrator',role:'admin',deptId:'all'},
-    {username:'sahp_hc',password:'sahp1234',displayName:'SAHP Command',role:'hc',deptId:'d1'},
+  for(const r of ranks) await SB.from('fudt_ranks').upsert(r,{onConflict:'id'});
+  const members = [
+    {id:'m01',name:'J. Reeves',badge:'SAHP-001',dept:'d1',rank:'Commissioner',status:'active',join_date:'2023-01-15',discord:''},
+    {id:'m02',name:'M. Torres',badge:'SAHP-012',dept:'d1',rank:'Sergeant',status:'active',join_date:'2023-03-08',discord:''},
+    {id:'m07',name:'A. Castillo',badge:'BCSO-001',dept:'d2',rank:'Sheriff',status:'active',join_date:'2022-11-05',discord:''},
+    {id:'m10',name:'C. Rivera',badge:'LSPD-001',dept:'d3',rank:'Chief of Police',status:'active',join_date:'2022-05-18',discord:''},
+    {id:'m12',name:'G. Brooks',badge:'FIB-001',dept:'d4',rank:'Director',status:'loa',join_date:'2022-08-14',discord:''},
+    {id:'m14',name:'N. Stone',badge:'AF-010',dept:'d5',rank:'General',status:'active',join_date:'2022-03-01',discord:''},
   ];
-  S.pending=[];
-  S.loas=[]; S.movs=[];
-  await save();
+  for(const m of members) await SB.from('fudt_members').upsert(m,{onConflict:'id'});
+  await loadAll();
+  toast('Demo data seeded! Login: admin / ngisontop', 'info', 6000);
+}
+
+// ════════════════════════════════════════════════════════
+//  REALTIME SUBSCRIPTIONS
+// ════════════════════════════════════════════════════════
+function startRealtime(){
+  stopRealtime();
+
+  const sub = SB.channel('fudt-live')
+    .on('postgres_changes',{event:'*',schema:'public',table:'fudt_members'},(p)=>{
+      handleChange('members', p);
+    })
+    .on('postgres_changes',{event:'*',schema:'public',table:'fudt_loas'},(p)=>{
+      handleChange('loas', p);
+    })
+    .on('postgres_changes',{event:'*',schema:'public',table:'fudt_movs'},(p)=>{
+      handleChange('movs', p);
+    })
+    .on('postgres_changes',{event:'*',schema:'public',table:'fudt_pending'},(p)=>{
+      handleChange('pending', p);
+    })
+    .on('postgres_changes',{event:'*',schema:'public',table:'fudt_users'},(p)=>{
+      handleChange('users', p);
+    })
+    .on('postgres_changes',{event:'*',schema:'public',table:'fudt_depts'},(p)=>{
+      handleChange('depts', p);
+    })
+    .on('postgres_changes',{event:'*',schema:'public',table:'fudt_ranks'},(p)=>{
+      handleChange('ranks', p);
+    })
+    .subscribe(status=>{
+      if(status==='SUBSCRIBED') setSyncStatus('ok','LIVE · Supabase realtime');
+      if(status==='CHANNEL_ERROR') setSyncStatus('err','REALTIME ERROR — check Supabase');
+    });
+
+  SUBS.push(sub);
+}
+
+function stopRealtime(){
+  SUBS.forEach(s=>{ try{ SB.removeChannel(s); }catch(_){} });
+  SUBS=[];
+}
+
+async function handleChange(type, payload){
+  setSyncStatus('syncing','SYNCING...');
+  // Reload the relevant table
+  if(type==='members'){
+    const rows = await dbGet('fudt_members');
+    S.members = rows.map(m=>({id:m.id,name:m.name,badge:m.badge||'',dept:m.dept,rank:m.rank,status:m.status||'active',date:m.join_date||'',discord:m.discord||''}));
+    renderAll();
+    if(document.getElementById('hMemberList')) renderHCMemberList();
+  }
+  if(type==='depts'||type==='ranks'){
+    const [depts,ranks] = await Promise.all([dbGet('fudt_depts'),dbGet('fudt_ranks')]);
+    S.depts = depts.map(d=>({id:d.id,name:d.name,abbr:d.abbr,color:d.color||'#3a7bd5',type:d.type||'leo'}));
+    S.ranks = {};
+    ranks.forEach(r=>{ if(!S.ranks[r.dept_id]) S.ranks[r.dept_id]=[]; S.ranks[r.dept_id].push({id:r.id,name:r.name,order:r.ord,tier:r.tier}); });
+    renderAll(); populateAllFormDepts();
+    if(document.getElementById('ap-depts').classList.contains('active')) renderADeptList();
+  }
+  if(type==='loas'){
+    const rows = await dbGet('fudt_loas');
+    S.loas = rows.map(loaMap);
+    renderMyLoas(); renderAdminReqs(); renderHCReqs();
+    // Notify command about new pending
+    const pendingCount = S.loas.filter(r=>r.status==='pending').length;
+    updateCommandNotifs(pendingCount + S.movs.filter(r=>r.status==='pending').length);
+    if(payload.eventType==='INSERT' && CU?.role!=='member'){
+      toast('📝 New LOA request from '+payload.new.name,'info');
+    }
+  }
+  if(type==='movs'){
+    const rows = await dbGet('fudt_movs');
+    S.movs = rows.map(movMap);
+    renderMyMovs(); renderAdminReqs(); renderHCReqs();
+    const pendingCount = S.loas.filter(r=>r.status==='pending').length + S.movs.filter(r=>r.status==='pending').length;
+    updateCommandNotifs(pendingCount);
+    if(payload.eventType==='INSERT' && CU?.role!=='member'){
+      toast('🔄 New movement request from '+payload.new.name,'info');
+    }
+  }
+  if(type==='pending'){
+    const rows = await dbGet('fudt_pending');
+    S.pending = rows.map(p=>({id:p.id,username:p.username,password:p.password,displayName:p.display_name,ts:p.ts}));
+    updatePendingBadges();
+    if(document.getElementById('aPendingList')) renderPendingList('aPendingList',true);
+    if(document.getElementById('hPendingList')) renderPendingList('hPendingList',false);
+    if(payload.eventType==='INSERT' && CU?.role!=='member'){
+      toast('👤 New account registration: '+payload.new.display_name,'info');
+    }
+  }
+  if(type==='users'){
+    const rows = await dbGet('fudt_users');
+    S.users = rows.map(u=>({id:u.id,username:u.username,password:u.password,displayName:u.display_name,role:u.role,deptId:u.dept_id}));
+    if(document.getElementById('aUserList')) renderAUserList();
+  }
+  setSyncStatus('ok','LIVE · Supabase realtime');
 }
 
 // ════════════════════════════════════════════════════════
@@ -890,110 +995,132 @@ function tickClock(){
 setInterval(tickClock,1000); tickClock();
 
 // ════════════════════════════════════════════════════════
-//  LOGO
+//  TOAST
 // ════════════════════════════════════════════════════════
-function applyLogo(url){
-  if(!url) return;
-  ['loginImg','topLogoImg'].forEach(id=>{
-    const el=document.getElementById(id);
-    el.src=url; el.style.display='block';
-    el.onerror=()=>{ el.style.display='none'; };
-  });
-  document.getElementById('loginFallback').style.display='none';
-  document.getElementById('topLogoText').style.display='none';
+function toast(msg, type='info', duration=4000){
+  const area = document.getElementById('toastArea');
+  const el = document.createElement('div');
+  el.className = 'toast '+type;
+  el.textContent = msg;
+  area.appendChild(el);
+  setTimeout(()=>{ el.style.opacity='0'; el.style.transition='opacity .4s'; setTimeout(()=>el.remove(), 400); }, duration);
 }
 
 // ════════════════════════════════════════════════════════
-//  REGISTER / LOGIN PANEL TOGGLE
+//  SYNC STATUS
+// ════════════════════════════════════════════════════════
+function setSyncStatus(state, msg){
+  const dot=document.getElementById('syncDot');
+  const m=document.getElementById('syncMsg');
+  dot.className='sync-dot'+(state==='syncing'?' syncing':state==='err'?' err':'');
+  m.textContent=msg;
+}
+
+// ════════════════════════════════════════════════════════
+//  COMMAND NOTIFS
+// ════════════════════════════════════════════════════════
+function updateCommandNotifs(pendingReqCount){
+  const ad = document.getElementById('admNotifDot');
+  const hc = document.getElementById('hcNotifDot');
+  const hcReqCt = document.getElementById('hcReqCt');
+  if(ad) ad.style.display = (CU?.role==='admin' && pendingReqCount>0)?'block':'none';
+  if(hc){
+    const myDeptPending = [...S.loas,...S.movs].filter(r=>r.status==='pending'&&(r.dept===CU?.deptId||r.deptFrom===CU?.deptId)).length;
+    hc.style.display = (CU?.role==='hc' && myDeptPending>0)?'block':'none';
+    if(hcReqCt){ hcReqCt.textContent=myDeptPending; hcReqCt.style.display=myDeptPending>0?'':'none'; }
+  }
+}
+
+function updatePendingBadges(){
+  const count = S.pending.length;
+  const adminBadge = document.getElementById('adminPendingCt');
+  const hcBadge    = document.getElementById('hcPendingCt');
+  if(adminBadge){ adminBadge.style.display=count>0?'':'none'; adminBadge.textContent=count; }
+  if(hcBadge){ hcBadge.style.display=count>0?'':'none'; hcBadge.textContent=count; }
+}
+
+// ════════════════════════════════════════════════════════
+//  REGISTER / LOGIN PANEL
 // ════════════════════════════════════════════════════════
 function showPanel(p){
-  ['login','register','pending'].forEach(n=>{
-    document.getElementById('panel'+n.charAt(0).toUpperCase()+n.slice(1)).style.display=(n===p?'':'none');
+  ['Login','Register','Pending'].forEach(n=>{
+    document.getElementById('panel'+n).style.display=(n.toLowerCase()===p?'':'none');
   });
 }
 
-// ════════════════════════════════════════════════════════
-//  SELF REGISTRATION
-// ════════════════════════════════════════════════════════
 async function doRegister(){
   const username = document.getElementById('regUser').value.trim().toLowerCase();
   const display  = document.getElementById('regDisplay').value.trim();
   const pass     = document.getElementById('regPass').value;
   const pass2    = document.getElementById('regPass2').value;
   const errEl    = document.getElementById('regErr');
-
-  const showErr = msg=>{ errEl.textContent='⚠ '+msg; errEl.style.display='block'; setTimeout(()=>errEl.style.display='none',4000); };
+  const showErr  = msg=>{ errEl.textContent='⚠ '+msg; errEl.style.display='block'; setTimeout(()=>errEl.style.display='none',4000); };
 
   if(!username||!display||!pass) return showErr('All fields are required.');
-  if(username.length<3)          return showErr('Username must be at least 3 characters.');
-  if(pass.length<6)              return showErr('Password must be at least 6 characters.');
-  if(pass!==pass2)               return showErr('Passwords do not match.');
+  if(username.length<3) return showErr('Username must be at least 3 characters.');
+  if(pass.length<6) return showErr('Password must be at least 6 characters.');
+  if(pass!==pass2) return showErr('Passwords do not match.');
   if(!/^[a-z0-9._-]+$/.test(username)) return showErr('Username: only letters, numbers, . _ - allowed.');
 
-  // Reload latest data before checking duplicates
-  await loadAll();
-  if(S.users.find(u=>u.username===username)||S.pending.find(p=>p.username===username)){
-    return showErr('That username is already taken.');
-  }
+  // Check for duplicates
+  const { data: existing } = await SB.from('fudt_users').select('id').eq('username',username).limit(1);
+  const { data: existPend } = await SB.from('fudt_pending').select('id').eq('username',username).limit(1);
+  if((existing&&existing.length)||(existPend&&existPend.length)) return showErr('Username already taken.');
 
-  S.pending.push({ id:'p'+uid(), username, password:pass, displayName:display, ts:Date.now() });
-  await save(['pending']);
+  await SB.from('fudt_pending').insert({id:'p'+uid(),username,password:pass,display_name:display,ts:Date.now()});
   showPanel('pending');
 }
 
-// ════════════════════════════════════════════════════════
-//  AUTH
-// ════════════════════════════════════════════════════════
 async function doLogin(){
   const u=document.getElementById('loginUser').value.trim().toLowerCase();
   const p=document.getElementById('loginPass').value;
   const errEl=document.getElementById('loginErr');
 
-  // Always reload shared state before authenticating
-  setSyncStatus('syncing','LOADING...');
-  await loadAll();
+  setSyncStatus('syncing','AUTHENTICATING...');
+  try{
+    // Check pending first
+    const { data: pend } = await SB.from('fudt_pending').select('*').eq('username',u).limit(1);
+    if(pend&&pend.length){ showPanel('pending'); setSyncStatus('ok','LIVE · Supabase realtime'); return; }
 
-  let user=null;
-  if(u==='admin'&&p===ADMIN_PASS){
-    user={username:'admin',password:ADMIN_PASS,displayName:'Administrator',role:'admin',deptId:'all'};
-  } else {
-    user=S.users.find(x=>x.username.toLowerCase()===u&&x.password===p);
-  }
-
-  if(!user){
-    // Check if they're in pending
-    if(S.pending.find(x=>x.username.toLowerCase()===u)){
-      showPanel('pending'); return;
+    const { data: users } = await SB.from('fudt_users').select('*').eq('username',u).limit(1);
+    if(!users||!users.length||users[0].password!==p){
+      errEl.style.display='block'; setTimeout(()=>errEl.style.display='none',3500);
+      setSyncStatus('ok','LIVE · Supabase realtime');
+      return;
     }
-    errEl.style.display='block'; setTimeout(()=>errEl.style.display='none',3500);
-    setSyncStatus('ok','CONNECTED · Live shared data');
-    return;
-  }
+    const u_row = users[0];
+    CU = {id:u_row.id,username:u_row.username,password:u_row.password,displayName:u_row.display_name,role:u_row.role,deptId:u_row.dept_id};
 
-  CU=user;
-  document.getElementById('loginOverlay').classList.add('hidden');
-  document.getElementById('appWrap').style.display='';
-  setupTopbar();
-  buildSidebar();
-  const acc=accessibleDepts();
-  if(acc.length>0){ AD=acc[0].id; }
-  renderAll();
-  populateAllFormDepts();
-  if(S.logo) applyLogo(S.logo);
-  startLiveListeners();
+    await loadAll();
+    document.getElementById('loginOverlay').style.display='none';
+    document.getElementById('appWrap').style.display='';
+    setupTopbar();
+    const acc=accessibleDepts();
+    if(acc.length>0) AD=acc[0].id;
+    renderAll();
+    populateAllFormDepts();
+    startRealtime();
+    updateCommandNotifs(S.loas.filter(r=>r.status==='pending').length+S.movs.filter(r=>r.status==='pending').length);
+    updatePendingBadges();
+    setSyncStatus('ok','LIVE · Supabase realtime');
+    toast('Welcome back, '+CU.displayName+'!','ok',3000);
+  } catch(e){
+    setSyncStatus('err','LOGIN ERROR: '+e.message);
+  }
 }
 
 document.getElementById('loginPass').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
 document.getElementById('loginUser').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
 
 function doSignout(){
-  stopLiveListeners();
+  stopRealtime();
   CU=null; AD=null;
   document.getElementById('appWrap').style.display='none';
-  document.getElementById('loginOverlay').classList.remove('hidden');
+  document.getElementById('loginOverlay').style.display='flex';
   document.getElementById('loginUser').value='';
   document.getElementById('loginPass').value='';
   showPanel('login');
+  setSyncStatus('ok','DISCONNECTED');
 }
 
 function accessibleDepts(){
@@ -1003,91 +1130,14 @@ function accessibleDepts(){
 }
 
 function setupTopbar(){
-  const u=CU;
-  document.getElementById('tbUser').textContent='👤 '+u.displayName;
+  document.getElementById('tbUser').textContent='👤 '+CU.displayName;
   document.getElementById('tbUser').style.display='';
   const rb=document.getElementById('tbRole');
   rb.style.display='';
-  if(u.role==='admin'){ rb.className='tb-role role-a'; rb.textContent='⚡ ADMIN'; document.getElementById('btnAdm').style.display=''; document.getElementById('btnHC').style.display='none'; }
-  else if(u.role==='hc'){ rb.className='tb-role role-h'; rb.textContent='⭐ HIGH COMMAND'; document.getElementById('btnHC').style.display=''; document.getElementById('btnAdm').style.display='none'; }
+  if(CU.role==='admin'){ rb.className='tb-role role-a'; rb.textContent='⚡ ADMIN'; document.getElementById('btnAdm').style.display=''; document.getElementById('btnHC').style.display='none'; }
+  else if(CU.role==='hc'){ rb.className='tb-role role-h'; rb.textContent='⭐ HIGH COMMAND'; document.getElementById('btnHC').style.display=''; document.getElementById('btnAdm').style.display='none'; }
   else { rb.className='tb-role role-m'; rb.textContent='MEMBER'; document.getElementById('btnAdm').style.display='none'; document.getElementById('btnHC').style.display='none'; }
   document.getElementById('btnReq').style.display='';
-}
-
-// ════════════════════════════════════════════════════════
-//  PENDING APPROVAL BADGES
-// ════════════════════════════════════════════════════════
-function updatePendingBadges(){
-  const count = S.pending.length;
-  const adminBadge = document.getElementById('adminPendingCt');
-  const hcBadge    = document.getElementById('hcPendingCt');
-  if(adminBadge){
-    adminBadge.style.display = count>0?'':'none';
-    adminBadge.textContent = count;
-  }
-  // For HC, count only unassigned (all pending are unassigned dept-wise)
-  if(hcBadge){
-    hcBadge.style.display = count>0?'':'none';
-    hcBadge.textContent = count;
-  }
-}
-
-// ════════════════════════════════════════════════════════
-//  PENDING LIST RENDERERS
-// ════════════════════════════════════════════════════════
-function renderPendingList(elId, isAdmin){
-  const el=document.getElementById(elId);
-  if(!S.pending.length){ el.innerHTML='<div class="empty">No pending registrations.</div>'; return; }
-  el.innerHTML=S.pending.map(p=>`
-    <div class="list-row">
-      <div class="list-row-l">
-        <div>
-          <div class="list-row-name">${p.displayName} <span style="font-family:var(--mono);font-size:9px;color:var(--text3);">@${p.username}</span></div>
-          <div class="list-row-sub">Registered ${new Date(p.ts).toLocaleString()}</div>
-        </div>
-      </div>
-      <div class="list-row-acts" style="gap:6px;flex-wrap:wrap;justify-content:flex-end;">
-        <select class="usel" id="pRole_${p.id}">
-          <option value="member">Member</option>
-          <option value="hc">High Command</option>
-          ${isAdmin?'<option value="admin">Admin</option>':''}
-        </select>
-        ${isAdmin?`
-          <select class="usel" id="pDept_${p.id}">
-            ${S.depts.map(d=>`<option value="${d.id}">${d.abbr}</option>`).join('')}
-            <option value="all">ALL (Admin)</option>
-          </select>
-        `:`<span style="font-family:var(--mono);font-size:9px;color:var(--text3);padding:4px 6px;border:1px solid var(--border);">${S.depts.find(d=>d.id===CU?.deptId)?.abbr||'?'}</span>`}
-        <button class="btn-appr" onclick="approvePending('${p.id}',${isAdmin})">APPROVE</button>
-        <button class="btn-deny" onclick="denyPending('${p.id}')">DENY</button>
-      </div>
-    </div>`).join('');
-}
-
-async function approvePending(pid, isAdmin){
-  const p = S.pending.find(x=>x.id===pid);
-  if(!p) return;
-  const roleEl = document.getElementById('pRole_'+pid);
-  const deptEl = document.getElementById('pDept_'+pid);
-  const role = roleEl?.value||'member';
-  const deptId = isAdmin ? (deptEl?.value||S.depts[0]?.id||'all') : CU.deptId;
-  if(S.users.find(u=>u.username===p.username)){ alert('Username already exists.'); return; }
-  S.users.push({username:p.username,password:p.password,displayName:p.displayName,role,deptId});
-  S.pending = S.pending.filter(x=>x.id!==pid);
-  await save(['users','pending']);
-  renderPendingList('aPendingList', true);
-  renderPendingList('hPendingList', false);
-  renderAUserList();
-  updatePendingBadges();
-}
-
-async function denyPending(pid){
-  if(!confirm('Remove this pending registration?')) return;
-  S.pending = S.pending.filter(x=>x.id!==pid);
-  await save(['pending']);
-  renderPendingList('aPendingList', true);
-  renderPendingList('hPendingList', false);
-  updatePendingBadges();
 }
 
 // ════════════════════════════════════════════════════════
@@ -1110,7 +1160,6 @@ function buildSidebar(){
   const acc=accessibleDepts();
   const sb=document.getElementById('sbDepts');
   sb.innerHTML='';
-  document.getElementById('sbLocked').style.display=(CU?.role!=='admin'&&acc.length<=1)?'':'none';
   acc.forEach(d=>{
     const cnt=S.members.filter(m=>m.dept===d.id).length;
     const btn=document.createElement('button');
@@ -1129,7 +1178,7 @@ function buildSidebar(){
 }
 
 // ════════════════════════════════════════════════════════
-//  ROSTER RENDER
+//  ROSTER
 // ════════════════════════════════════════════════════════
 function renderAll(){ buildSidebar(); renderRoster(); }
 
@@ -1137,14 +1186,14 @@ function renderRoster(){
   const main=document.getElementById('rosterMain');
   if(!AD){ main.innerHTML='<div class="empty">← Select a department from the sidebar</div>'; return; }
   const acc=accessibleDepts();
-  if(!acc.find(d=>d.id===AD)){ main.innerHTML='<div class="empty">🔒 Access denied — you are not assigned to this department.</div>'; return; }
+  if(!acc.find(d=>d.id===AD)){ main.innerHTML='<div class="empty">🔒 Access denied.</div>'; return; }
   const dept=S.depts.find(d=>d.id===AD);
   if(!dept) return;
   const dm=S.members.filter(m=>m.dept===dept.id);
   const canEdit=CU?.role==='admin'||(CU?.role==='hc'&&CU?.deptId===dept.id);
   main.innerHTML=`
     <div class="dept-hdr">
-      <div class="dept-hdr-left">
+      <div>
         <div class="dept-name" style="color:${dept.color};text-shadow:0 0 30px ${dept.color}44">${dept.name.toUpperCase()}</div>
         <div class="dept-sub">${dept.abbr} · ${(dept.type||'DEPT').toUpperCase()} · ACTIVE PERSONNEL ROSTER</div>
       </div>
@@ -1156,7 +1205,7 @@ function renderRoster(){
       </div>
     </div>
     <div class="filter-row">
-      <input class="f-input" id="fSearch" placeholder="SEARCH PERSONNEL NAME, BADGE, RANK..." oninput="applyFilter()">
+      <input class="f-input" id="fSearch" placeholder="SEARCH NAME, BADGE, RANK..." oninput="applyFilter()">
       <select class="f-sel" id="fStatus" onchange="applyFilter()">
         <option value="">All Status</option>
         <option value="active">Active</option>
@@ -1173,11 +1222,10 @@ function renderRoster(){
 function applyFilter(){
   const srch=(document.getElementById('fSearch')?.value||'').toLowerCase();
   const sf=document.getElementById('fStatus')?.value||'';
-  const dept=S.depts.find(d=>d.id===AD);
-  if(!dept) return;
+  const dept=S.depts.find(d=>d.id===AD); if(!dept) return;
   const canEdit=CU?.role==='admin'||(CU?.role==='hc'&&CU?.deptId===dept.id);
   let members=S.members.filter(m=>m.dept===dept.id);
-  if(srch) members=members.filter(m=>[m.name,m.badge,m.rank].some(x=>x.toLowerCase().includes(srch)));
+  if(srch) members=members.filter(m=>[m.name,m.badge,m.rank].some(x=>(x||'').toLowerCase().includes(srch)));
   if(sf) members=members.filter(m=>m.status===sf);
   const countEl=document.getElementById('fCount');
   if(countEl) countEl.textContent=members.length+' records';
@@ -1187,8 +1235,7 @@ function applyFilter(){
   members.forEach(m=>{ if(rankNames.includes(m.rank)){ if(!grp[m.rank]) grp[m.rank]=[]; grp[m.rank].push(m); } else norank.push(m); });
   const ordered=rankNames.filter(r=>grp[r]);
   if(norank.length){ ordered.push('__other'); grp['__other']=norank; }
-  const cont=document.getElementById('rosterRows');
-  if(!cont) return;
+  const cont=document.getElementById('rosterRows'); if(!cont) return;
   if(members.length===0){ cont.innerHTML='<div class="empty">No personnel match your search.</div>'; return; }
   cont.innerHTML=ordered.map(rn=>{
     const g=grp[rn]; const dn=rn==='__other'?'Unranked / Other':rn;
@@ -1203,7 +1250,7 @@ function applyFilter(){
           <thead><tr><th>Personnel</th><th>Rank</th><th>Join Date</th><th>Status</th>${canEdit?'<th>Quick Edit</th>':''}</tr></thead>
           <tbody>${g.map((m,i)=>`
             <tr style="animation-delay:${i*35}ms">
-              <td><div class="mem-name">${m.name}</div><div class="mem-id">${m.badge}${m.discord?' · '+m.discord:''}</div></td>
+              <td><div class="mem-name">${m.name}</div><div class="mem-id">${m.badge||''}${m.discord?' · '+m.discord:''}</div></td>
               <td><span class="brank">${m.rank}</span></td>
               <td><span style="font-family:var(--mono);font-size:11px;color:var(--text3);">${fmtDate(m.date)}</span></td>
               <td>${statusBadge(m.status)}</td>
@@ -1226,20 +1273,22 @@ function applyFilter(){
 
 function toggleRankSec(hdr){ hdr.classList.toggle('col'); hdr.nextElementSibling.classList.toggle('col'); }
 
-async function quickStatus(id,val){
-  const m=S.members.find(x=>x.id===id);
-  if(m){ m.status=val; await save(['members']); buildSidebar(); }
+async function quickStatus(id, val){
+  await dbUpdate('fudt_members', id, {status:val, updated_at: new Date().toISOString()});
+  const m=S.members.find(x=>x.id===id); if(m) m.status=val;
+  buildSidebar();
 }
 
 async function delMember(id){
   if(!confirm('Remove this personnel record?')) return;
+  await dbDelete('fudt_members', id);
   S.members=S.members.filter(m=>m.id!==id);
-  await save(['members']); renderAll();
+  renderAll();
 }
 
 function statusBadge(s){
   const map={active:['bs-active','ACTIVE'],needs:['bs-needs','NEEDS IMPRV.'],inactive:['bs-inactive','INACTIVE'],loa:['bs-loa','LOA']};
-  const [c,l]=map[s]||['bs-inactive',s.toUpperCase()];
+  const [c,l]=map[s]||['bs-inactive',(s||'').toUpperCase()];
   return `<span class="bstatus ${c}">${l}</span>`;
 }
 
@@ -1249,33 +1298,43 @@ function fmtDate(d){
 }
 
 // ════════════════════════════════════════════════════════
-//  LOA REQUESTS
+//  POPULATE FORM DEPTS
 // ════════════════════════════════════════════════════════
 function populateAllFormDepts(){
   const acc=accessibleDepts();
-  ['loaDept','movDeptFrom','movDeptTo','aNewDept'].forEach(id=>{
-    const el=document.getElementById(id);
-    if(!el) return;
+  ['loaDept','movDeptFrom','movDeptTo'].forEach(id=>{
+    const el=document.getElementById(id); if(!el) return;
     el.innerHTML=acc.map(d=>`<option value="${d.id}">${d.name} (${d.abbr})</option>`).join('');
+  });
+  ['aNewDept','aMemDept'].forEach(id=>{
+    const el=document.getElementById(id); if(!el) return;
+    el.innerHTML=S.depts.map(d=>`<option value="${d.id}">${d.name} (${d.abbr})</option>`).join('');
   });
 }
 
+// ════════════════════════════════════════════════════════
+//  LOA
+// ════════════════════════════════════════════════════════
 async function submitLOA(){
   const name=v('loaName'),badge=v('loaBadge'),dept=v('loaDept'),rank=v('loaRank');
   const start=v('loaStart'),end=v('loaEnd'),reason=v('loaReason'),discord=v('loaDiscord');
   const msg=document.getElementById('loaMsg');
   if(!name||!badge||!dept||!start||!end||!reason){ showMsg(msg,'err','⚠ Please fill in all required fields.'); return; }
-  S.loas.push({id:uid(),name,badge,dept,rank,start,end,reason,discord,status:'pending',ts:Date.now(),by:CU?.username||'guest'});
-  await save(['loas']);
-  showMsg(msg,'ok','✓ LOA request submitted — awaiting command review.');
-  ['loaName','loaBadge','loaRank','loaStart','loaEnd','loaReason','loaDiscord'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
-  renderMyLoas();
+  const row={id:uid(),name,badge,dept,rank,start_date:start,end_date:end,reason,discord,status:'pending',by_user:CU?.username||'guest',ts:Date.now()};
+  const ok=await dbUpsert('fudt_loas',row);
+  if(ok){
+    showMsg(msg,'ok','✓ LOA request submitted — command will be notified.');
+    ['loaName','loaBadge','loaRank','loaStart','loaEnd','loaReason','loaDiscord'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+    S.loas.push(loaMap({...row,start_date:row.start_date,end_date:row.end_date,by_user:row.by_user,dept_from:row.dept,dept_to:row.dept}));
+    renderMyLoas();
+  } else {
+    showMsg(msg,'err','⚠ Failed to submit. Check connection.');
+  }
 }
 
 function renderMyLoas(){
-  const el=document.getElementById('myLoaList');
-  let list=S.loas;
-  if(CU?.role!=='admin') list=list.filter(r=>r.by===CU?.username);
+  const el=document.getElementById('myLoaList'); if(!el) return;
+  let list=CU?.role==='admin'?S.loas:S.loas.filter(r=>r.by===CU?.username);
   const isAdm=CU?.role==='admin'; const isHC=CU?.role==='hc';
   if(!list.length){ el.innerHTML='<div class="empty">No LOA requests on file.</div>'; return; }
   el.innerHTML='<div class="req-grid">'+list.sort((a,b)=>b.ts-a.ts).map(r=>{
@@ -1287,8 +1346,8 @@ function renderMyLoas(){
         <div class="req-meta">Dept: ${d?.abbr||r.dept} &nbsp;|&nbsp; Rank: ${r.rank||'—'}<br>Period: ${fmtDate(r.start)} → ${fmtDate(r.end)}<br>Reason: ${r.reason}<br>Discord: ${r.discord||'—'} · ${new Date(r.ts).toLocaleString()}</div>
       </div>
       <div class="req-acts">
-        ${canAct?`<button class="btn-appr" onclick="resolveReq('loa','${r.id}','approved')">APPROVE</button><button class="btn-deny" onclick="resolveReq('loa','${r.id}','denied')">DENY</button>`:''}
-        ${isAdm?`<button class="btn-del" onclick="delReq('loa','${r.id}')">DEL</button>`:''}
+        ${canAct&&r.status==='pending'?`<button class="btn-appr" onclick="resolveReq('loas','${r.id}','approved')">APPROVE</button><button class="btn-deny" onclick="resolveReq('loas','${r.id}','denied')">DENY</button>`:''}
+        ${isAdm?`<button class="btn-del" onclick="delReq('loas','${r.id}')">DEL</button>`:''}
       </div>
     </div>`;
   }).join('')+'</div>';
@@ -1311,16 +1370,24 @@ async function submitMOV(){
   const newRank=v('movNewRank'),effDate=v('movEffDate'),reason=v('movReason'),discord=v('movDiscord');
   const msg=document.getElementById('movMsg');
   if(!name||!badge||!deptFrom||!reason){ showMsg(msg,'err','⚠ Please fill in all required fields.'); return; }
-  S.movs.push({ id:uid(),name,badge,deptFrom,rankFrom,type, deptTo:type==='transfer'?deptTo:deptFrom, rankTo:type==='transfer'?rankTo:(type==='promotion'||type==='demotion')?newRank:'', effDate,reason,discord,status:'pending',ts:Date.now(),by:CU?.username||'guest' });
-  await save(['movs']);
-  showMsg(msg,'ok','✓ Movement request submitted — awaiting command review.');
-  ['movName','movBadge','movRankFrom','movRankTo','movNewRank','movEffDate','movReason','movDiscord'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
-  renderMyMovs();
+  const row={id:uid(),name,badge,dept_from:deptFrom,rank_from:rankFrom,mov_type:type,
+    dept_to:type==='transfer'?deptTo:deptFrom,
+    rank_to:type==='transfer'?rankTo:(type==='promotion'||type==='demotion')?newRank:'',
+    eff_date:effDate,reason,discord,status:'pending',by_user:CU?.username||'guest',ts:Date.now()};
+  const ok=await dbUpsert('fudt_movs',row);
+  if(ok){
+    showMsg(msg,'ok','✓ Movement request submitted — command will be notified.');
+    ['movName','movBadge','movRankFrom','movRankTo','movNewRank','movEffDate','movReason','movDiscord'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+    S.movs.push(movMap(row));
+    renderMyMovs();
+  } else {
+    showMsg(msg,'err','⚠ Failed to submit. Check connection.');
+  }
 }
 
 function renderMyMovs(){
-  const el=document.getElementById('myMovList');
-  let list=S.movs; if(CU?.role!=='admin') list=list.filter(r=>r.by===CU?.username);
+  const el=document.getElementById('myMovList'); if(!el) return;
+  let list=CU?.role==='admin'?S.movs:S.movs.filter(r=>r.by===CU?.username);
   const isAdm=CU?.role==='admin'; const isHC=CU?.role==='hc';
   if(!list.length){ el.innerHTML='<div class="empty">No movement requests on file.</div>'; return; }
   el.innerHTML='<div class="req-grid">'+list.sort((a,b)=>b.ts-a.ts).map(r=>{
@@ -1328,34 +1395,37 @@ function renderMyMovs(){
     const canAct=isAdm||(isHC&&CU?.deptId===r.deptFrom);
     return `<div class="req-card">
       <div class="req-card-body">
-        <div class="req-card-hdr"><span class="rtag rt-mov">${r.type.toUpperCase()}</span><span class="rtag rt-${r.status==='pending'?'pend':r.status==='approved'?'appr':'deni'}">${r.status.toUpperCase()}</span></div>
+        <div class="req-card-hdr"><span class="rtag rt-mov">${(r.type||'MOV').toUpperCase()}</span><span class="rtag rt-${r.status==='pending'?'pend':r.status==='approved'?'appr':'deni'}">${r.status.toUpperCase()}</span></div>
         <div class="req-name">${r.name} — ${r.badge}</div>
         <div class="req-meta">From: ${dF?.abbr||r.deptFrom} / ${r.rankFrom||'—'}
           ${r.type==='transfer'?`<br>To: ${dT?.abbr||r.deptTo} / ${r.rankTo||'TBD'}`:''}
           ${r.type==='promotion'||r.type==='demotion'?`<br>New Rank: ${r.rankTo||'—'}`:''}
-          <br>Reason: ${r.reason}<br>Discord: ${r.discord||'—'} · ${new Date(r.ts).toLocaleString()}</div>
+          <br>Reason: ${r.reason}<br>@${r.by} · ${new Date(r.ts).toLocaleString()}</div>
       </div>
       <div class="req-acts">
-        ${canAct?`<button class="btn-appr" onclick="resolveReq('mov','${r.id}','approved')">APPROVE</button><button class="btn-deny" onclick="resolveReq('mov','${r.id}','denied')">DENY</button>`:''}
-        ${isAdm?`<button class="btn-del" onclick="delReq('mov','${r.id}')">DEL</button>`:''}
+        ${canAct&&r.status==='pending'?`<button class="btn-appr" onclick="resolveReq('movs','${r.id}','approved')">APPROVE</button><button class="btn-deny" onclick="resolveReq('movs','${r.id}','denied')">DENY</button>`:''}
+        ${isAdm?`<button class="btn-del" onclick="delReq('movs','${r.id}')">DEL</button>`:''}
       </div>
     </div>`;
   }).join('')+'</div>';
 }
 
-async function resolveReq(type,id,status){
-  const list=type==='loa'?S.loas:S.movs;
-  const r=list.find(x=>x.id===id);
-  if(r){ r.status=status; await save([type==='loa'?'loas':'movs']); }
-  if(type==='loa'){ renderMyLoas(); renderAdminReqs(); renderHCReqs(); }
+async function resolveReq(table, id, status){
+  await dbUpdate('fudt_'+table, id, {status});
+  const list = table==='loas'?S.loas:S.movs;
+  const r=list.find(x=>x.id===id); if(r) r.status=status;
+  if(table==='loas'){ renderMyLoas(); renderAdminReqs(); renderHCReqs(); }
   else { renderMyMovs(); renderAdminReqs(); renderHCReqs(); }
+  updateCommandNotifs(S.loas.filter(r=>r.status==='pending').length+S.movs.filter(r=>r.status==='pending').length);
+  toast(status==='approved'?'✓ Request approved':'✕ Request denied', status==='approved'?'ok':'err', 3000);
 }
 
-async function delReq(type,id){
+async function delReq(table, id){
   if(!confirm('Delete this request permanently?')) return;
-  if(type==='loa') S.loas=S.loas.filter(x=>x.id!==id);
+  await dbDelete('fudt_'+table, id);
+  if(table==='loas') S.loas=S.loas.filter(x=>x.id!==id);
   else S.movs=S.movs.filter(x=>x.id!==id);
-  await save([type==='loa'?'loas':'movs']); renderMyLoas(); renderMyMovs(); renderAdminReqs();
+  renderMyLoas(); renderMyMovs(); renderAdminReqs();
 }
 
 // ════════════════════════════════════════════════════════
@@ -1365,10 +1435,8 @@ function openAdmin(){
   if(CU?.role!=='admin') return;
   document.getElementById('modalAdmin').classList.add('open');
   populateAdminSelects(); renderADeptList(); renderAdminReqs(); renderAUserList();
-  renderPendingList('aPendingList', true);
+  renderPendingList('aPendingList',true);
   updatePendingBadges();
-  if(S.sheetsUrl) document.getElementById('aSheetsUrl').value=S.sheetsUrl;
-  if(S.logo) document.getElementById('aLogoUrl').value=S.logo;
 }
 
 function closeModal(id){ document.getElementById(id).classList.remove('open'); renderAll(); populateAllFormDepts(); }
@@ -1380,7 +1448,7 @@ function aTab(t,btn){
   if(btn) btn.classList.add('active');
   if(t==='ranks'||t==='members') populateAdminSelects();
   if(t==='allreq') renderAdminReqs();
-  if(t==='users') renderAUserList();
+  if(t==='users'){ renderAUserList(); populateAdminSelects(); }
   if(t==='pending'){ renderPendingList('aPendingList',true); updatePendingBadges(); }
 }
 
@@ -1389,7 +1457,8 @@ function populateAdminSelects(){
     const el=document.getElementById(id); if(!el) return;
     el.innerHTML=S.depts.map(d=>`<option value="${d.id}">${d.name} (${d.abbr})</option>`).join('');
   });
-  loadMemRanks('aMemDept','aMemRank'); renderARankList();
+  loadMemRanks('aMemDept','aMemRank');
+  renderARankList();
 }
 
 document.getElementById('colorGrid').addEventListener('click',e=>{
@@ -1402,21 +1471,27 @@ async function adminAddDept(){
   const name=v('aDeptName').trim(); const abbr=v('aDeptAbbr').trim().toUpperCase(); const type=v('aDeptType');
   if(!name||!abbr){ alert('Name and abbreviation required.'); return; }
   const id='d'+uid();
+  await dbUpsert('fudt_depts',{id,name,abbr,color:CC,type});
   S.depts.push({id,name,abbr,color:CC,type}); S.ranks[id]=[];
-  await save(['depts','ranks']);
   document.getElementById('aDeptName').value=''; document.getElementById('aDeptAbbr').value='';
   renderADeptList(); populateAdminSelects(); populateAllFormDepts(); buildSidebar();
+  toast('Department created: '+abbr,'ok',3000);
 }
 
 async function adminDelDept(id){
   if(!confirm('Delete department and ALL its members?')) return;
+  await dbDelete('fudt_depts',id);
+  const memberIds=S.members.filter(m=>m.dept===id).map(m=>m.id);
+  for(const mid of memberIds) await dbDelete('fudt_members',mid);
+  const rankIds=(S.ranks[id]||[]).map(r=>r.id);
+  for(const rid of rankIds) await dbDelete('fudt_ranks',rid);
   S.depts=S.depts.filter(d=>d.id!==id); delete S.ranks[id];
   S.members=S.members.filter(m=>m.dept!==id); if(AD===id) AD=null;
-  await save(['depts','ranks','members']); renderADeptList(); populateAdminSelects(); populateAllFormDepts(); buildSidebar();
+  renderADeptList(); populateAdminSelects(); populateAllFormDepts(); buildSidebar();
 }
 
 function renderADeptList(){
-  const el=document.getElementById('aDeptList');
+  const el=document.getElementById('aDeptList'); if(!el) return;
   el.innerHTML=S.depts.map(d=>{
     const cnt=S.members.filter(m=>m.dept===d.id).length;
     return `<div class="list-row">
@@ -1425,20 +1500,23 @@ function renderADeptList(){
       </div>
       <div class="list-row-acts"><button class="btn-del" onclick="adminDelDept('${d.id}')">DELETE</button></div>
     </div>`;
-  }).join('');
+  }).join('')||'<div class="empty">No departments yet.</div>';
 }
 
 async function adminAddRank(){
   const deptId=v('aRankDept'); const name=v('aRankName').trim(); const order=parseInt(v('aRankOrder'))||99; const tier=v('aRankTier');
   if(!deptId||!name){ alert('Department and rank name required.'); return; }
+  const id='r'+uid();
+  await dbUpsert('fudt_ranks',{id,dept_id:deptId,name,ord:order,tier});
   if(!S.ranks[deptId]) S.ranks[deptId]=[];
-  S.ranks[deptId].push({id:'r'+uid(),name,order,tier});
-  await save(['ranks']); document.getElementById('aRankName').value=''; renderARankList();
+  S.ranks[deptId].push({id,name,order,tier});
+  document.getElementById('aRankName').value=''; renderARankList();
 }
 
 async function adminDelRank(deptId,rankId){
+  await dbDelete('fudt_ranks',rankId);
   S.ranks[deptId]=S.ranks[deptId].filter(r=>r.id!==rankId);
-  await save(['ranks']); renderARankList();
+  renderARankList();
 }
 
 function renderARankList(){
@@ -1448,11 +1526,11 @@ function renderARankList(){
     <div class="list-row">
       <div class="list-row-l"><div><div class="list-row-name">${r.name}</div><div class="list-row-sub">Order: ${r.order} · ${(r.tier||'patrol').toUpperCase()}</div></div></div>
       <div class="list-row-acts"><button class="btn-del" onclick="adminDelRank('${deptId}','${r.id}')">DELETE</button></div>
-    </div>`).join('');
+    </div>`).join('')||'<div class="empty">No ranks for this department.</div>';
 }
 
-function loadMemRanks(deptElId,rankElId){
-  const deptId=v(deptElId)||document.getElementById(deptElId)?.value;
+function loadMemRanks(deptElId, rankElId){
+  const deptId=document.getElementById(deptElId)?.value;
   const rankEl=document.getElementById(rankElId); if(!rankEl) return;
   rankEl.innerHTML=(S.ranks[deptId]||[]).sort((a,b)=>a.order-b.order).map(r=>`<option value="${r.name}">${r.name}</option>`).join('');
 }
@@ -1461,10 +1539,11 @@ async function adminAddMember(){
   const name=v('aMemName').trim(),badge=v('aMemBadge').trim(),dept=v('aMemDept'),rank=v('aMemRank');
   const date=v('aMemDate'),status=v('aMemStatus'),discord=v('aMemDiscord').trim();
   if(!name||!dept||!rank){ alert('Name, department and rank required.'); return; }
-  S.members.push({id:'m'+uid(),name,badge,dept,rank,date,status,discord});
-  await save(['members']);
+  const row={id:'m'+uid(),name,badge,dept,rank,join_date:date,status,discord};
+  await dbUpsert('fudt_members',row);
+  S.members.push({id:row.id,name,badge,dept,rank,date,status,discord});
   ['aMemName','aMemBadge','aMemDate','aMemDiscord'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
-  renderAll();
+  renderAll(); toast('Member added: '+name,'ok',3000);
 }
 
 async function adminCreateUser(){
@@ -1472,27 +1551,30 @@ async function adminCreateUser(){
   const role=v('aNewRole'),deptId=v('aNewDept');
   if(!username||!password||!displayName){ alert('All fields required.'); return; }
   if(S.users.find(u=>u.username===username)){ alert('Username already exists.'); return; }
-  S.users.push({username,password,displayName,role,deptId});
-  await save(['users']);
+  const row={id:'u'+uid(),username,password,display_name:displayName,role,dept_id:deptId};
+  await dbUpsert('fudt_users',row);
+  S.users.push({id:row.id,username,password,displayName,role,deptId});
   ['aNewUser','aNewPass','aNewDisplay'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  renderAUserList(); toast('User created: @'+username,'ok',3000);
+}
+
+async function adminDelUser(id){
+  const u=S.users.find(x=>x.id===id);
+  if(u?.username==='admin'){ alert('Cannot delete the admin account.'); return; }
+  if(!confirm('Delete user account?')) return;
+  await dbDelete('fudt_users',id);
+  S.users=S.users.filter(u=>u.id!==id);
   renderAUserList();
 }
 
-async function adminDelUser(username){
-  if(username==='admin'){ alert('Cannot delete the admin account.'); return; }
-  if(!confirm('Delete user account?')) return;
-  S.users=S.users.filter(u=>u.username!==username);
-  await save(['users']); renderAUserList();
+async function adminChangeRole(id,role){
+  await dbUpdate('fudt_users',id,{role});
+  const u=S.users.find(x=>x.id===id); if(u) u.role=role;
 }
 
-async function adminChangeRole(username,role){
-  const u=S.users.find(x=>x.username===username);
-  if(u){ u.role=role; await save(['users']); }
-}
-
-async function adminChangeDept(username,deptId){
-  const u=S.users.find(x=>x.username===username);
-  if(u){ u.deptId=deptId; await save(['users']); }
+async function adminChangeDept(id,deptId){
+  await dbUpdate('fudt_users',id,{dept_id:deptId});
+  const u=S.users.find(x=>x.id===id); if(u) u.deptId=deptId;
 }
 
 function renderAUserList(){
@@ -1505,36 +1587,37 @@ function renderAUserList(){
         <div class="list-row-sub">${u.role.toUpperCase()} · ${dept?.abbr||u.deptId||'ALL'}</div>
       </div></div>
       <div class="list-row-acts">
-        <select class="usel" onchange="adminChangeRole('${u.username}',this.value)">
+        <select class="usel" onchange="adminChangeRole('${u.id}',this.value)">
           <option value="member" ${u.role==='member'?'selected':''}>Member</option>
           <option value="hc" ${u.role==='hc'?'selected':''}>HC</option>
           <option value="admin" ${u.role==='admin'?'selected':''}>Admin</option>
         </select>
-        <select class="usel" onchange="adminChangeDept('${u.username}',this.value)" style="max-width:100px;">
+        <select class="usel" onchange="adminChangeDept('${u.id}',this.value)" style="max-width:100px;">
           ${S.depts.map(d=>`<option value="${d.id}" ${u.deptId===d.id?'selected':''}>${d.abbr}</option>`).join('')}
           <option value="all" ${u.deptId==='all'?'selected':''}>ALL</option>
         </select>
-        <button class="btn-del" onclick="adminDelUser('${u.username}')">✕</button>
+        <button class="btn-del" onclick="adminDelUser('${u.id}')">✕</button>
       </div>
     </div>`;
-  }).join('');
+  }).join('')||'<div class="empty">No user accounts.</div>';
 }
 
 function renderAdminReqs(){
   const el=document.getElementById('aAllReqList'); if(!el) return;
-  const all=[...S.loas.map(r=>({...r,_t:'loa'})),...S.movs.map(r=>({...r,_t:'mov'}))].sort((a,b)=>b.ts-a.ts);
+  const all=[...S.loas.map(r=>({...r,_t:'loas'})),...S.movs.map(r=>({...r,_t:'movs'}))].sort((a,b)=>b.ts-a.ts);
   if(!all.length){ el.innerHTML='<div class="empty">No requests submitted yet.</div>'; return; }
   el.innerHTML='<div class="req-grid">'+all.map(r=>{
     const d=S.depts.find(x=>x.id===(r.dept||r.deptFrom));
-    return `<div class="req-card">
+    return `<div class="req-card${r.status==='pending'?' new-flash':''}">
       <div class="req-card-body">
-        <div class="req-card-hdr"><span class="rtag ${r._t==='loa'?'rt-loa':'rt-mov'}">${r._t==='loa'?'LOA':(r.type||'MOV').toUpperCase()}</span><span class="rtag rt-${r.status==='pending'?'pend':r.status==='approved'?'appr':'deni'}">${r.status.toUpperCase()}</span></div>
+        <div class="req-card-hdr"><span class="rtag ${r._t==='loas'?'rt-loa':'rt-mov'}">${r._t==='loas'?'LOA':(r.type||'MOV').toUpperCase()}</span><span class="rtag rt-${r.status==='pending'?'pend':r.status==='approved'?'appr':'deni'}">${r.status.toUpperCase()}</span></div>
         <div class="req-name">${r.name} — ${r.badge}</div>
-        <div class="req-meta">Dept: ${d?.abbr||'—'} · @${r.by} · ${new Date(r.ts).toLocaleString()}</div>
+        <div class="req-meta">Dept: ${d?.abbr||'—'} &nbsp;|&nbsp; @${r.by} · ${new Date(r.ts).toLocaleString()}
+          ${r._t==='loas'?`<br>Period: ${fmtDate(r.start)} → ${fmtDate(r.end)}<br>Reason: ${r.reason}`:`<br>From: ${S.depts.find(x=>x.id===r.deptFrom)?.abbr||r.deptFrom} / ${r.rankFrom||'—'}<br>Reason: ${r.reason}`}
+        </div>
       </div>
       <div class="req-acts">
-        <button class="btn-appr" onclick="resolveReq('${r._t}','${r.id}','approved')">APPROVE</button>
-        <button class="btn-deny" onclick="resolveReq('${r._t}','${r.id}','denied')">DENY</button>
+        ${r.status==='pending'?`<button class="btn-appr" onclick="resolveReq('${r._t}','${r.id}','approved')">APPROVE</button><button class="btn-deny" onclick="resolveReq('${r._t}','${r.id}','denied')">DENY</button>`:''}
         <button class="btn-del" onclick="delReq('${r._t}','${r.id}')">DEL</button>
       </div>
     </div>`;
@@ -1542,188 +1625,60 @@ function renderAdminReqs(){
 }
 
 // ════════════════════════════════════════════════════════
-//  GOOGLE SHEETS — OAuth via Google Identity Services
+//  PENDING
 // ════════════════════════════════════════════════════════
-// You must create a project at console.cloud.google.com,
-// enable Google Sheets API, create an OAuth 2.0 Client ID
-// (Web application), and add your hosted domain to
-// Authorized JavaScript Origins. Paste the client ID below.
-const GAPI_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
-const GAPI_SCOPE     = 'https://www.googleapis.com/auth/spreadsheets';
-
-let G_ACCESS_TOKEN = null;
-let G_TOKEN_CLIENT = null;
-let G_REFRESH_TIMER = null;
-
-function initGoogleAuth(){
-  if(!window.google?.accounts?.oauth2) return;
-  G_TOKEN_CLIENT = google.accounts.oauth2.initTokenClient({
-    client_id: GAPI_CLIENT_ID,
-    scope: GAPI_SCOPE,
-    callback: (resp)=>{
-      if(resp.error){ gSheetMsg('err','Google sign-in failed: '+resp.error); return; }
-      G_ACCESS_TOKEN = resp.access_token;
-      // Fetch user email to show "Signed in as"
-      fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-        headers:{Authorization:'Bearer '+G_ACCESS_TOKEN}
-      }).then(r=>r.json()).then(u=>{
-        document.getElementById('gSignedInAs').style.display='';
-        document.getElementById('gSignedInAs').textContent='✓ Signed in as '+u.email;
-        document.getElementById('gSignInBtn').style.display='none';
-      });
-    }
-  });
-
-  // Render the sign-in button
-  google.accounts.id.initialize({ client_id: GAPI_CLIENT_ID, callback: ()=>{} });
-
-  const btn = document.getElementById('gSignInBtn');
-  if(btn){
-    btn.innerHTML = `<button class="fbtn" onclick="requestGToken()">🔗 SIGN IN WITH GOOGLE</button>`;
-  }
+function renderPendingList(elId, isAdmin){
+  const el=document.getElementById(elId); if(!el) return;
+  if(!S.pending.length){ el.innerHTML='<div class="empty">No pending registrations.</div>'; return; }
+  el.innerHTML=S.pending.map(p=>`
+    <div class="list-row">
+      <div class="list-row-l"><div>
+        <div class="list-row-name">${p.displayName} <span style="font-family:var(--mono);font-size:9px;color:var(--text3);">@${p.username}</span></div>
+        <div class="list-row-sub">Registered ${new Date(p.ts).toLocaleString()}</div>
+      </div></div>
+      <div class="list-row-acts">
+        <select class="usel" id="pRole_${p.id}">
+          <option value="member">Member</option>
+          <option value="hc">High Command</option>
+          ${isAdmin?'<option value="admin">Admin</option>':''}
+        </select>
+        ${isAdmin?`
+          <select class="usel" id="pDept_${p.id}">
+            ${S.depts.map(d=>`<option value="${d.id}">${d.abbr}</option>`).join('')}
+            <option value="all">ALL</option>
+          </select>
+        `:`<span style="font-family:var(--mono);font-size:9px;color:var(--text3);padding:4px 6px;border:1px solid var(--border);">${S.depts.find(d=>d.id===CU?.deptId)?.abbr||'?'}</span>`}
+        <button class="btn-appr" onclick="approvePending('${p.id}',${isAdmin})">APPROVE</button>
+        <button class="btn-deny" onclick="denyPending('${p.id}')">DENY</button>
+      </div>
+    </div>`).join('');
 }
 
-function requestGToken(){
-  if(!G_TOKEN_CLIENT){
-    gSheetMsg('err','Google services not loaded. Check your Client ID and that your domain is an Authorized JavaScript Origin.');
-    return;
-  }
-  G_TOKEN_CLIENT.requestAccessToken({prompt:'consent'});
+async function approvePending(pid, isAdmin){
+  const p=S.pending.find(x=>x.id===pid); if(!p) return;
+  const roleEl=document.getElementById('pRole_'+pid);
+  const deptEl=document.getElementById('pDept_'+pid);
+  const role=roleEl?.value||'member';
+  const deptId=isAdmin?(deptEl?.value||S.depts[0]?.id||'all'):CU.deptId;
+  if(S.users.find(u=>u.username===p.username)){ alert('Username already exists.'); return; }
+  const newUser={id:'u'+uid(),username:p.username,password:p.password,display_name:p.displayName,role,dept_id:deptId};
+  await dbUpsert('fudt_users',newUser);
+  await dbDelete('fudt_pending',pid);
+  S.users.push({id:newUser.id,username:p.username,password:p.password,displayName:p.displayName,role,deptId});
+  S.pending=S.pending.filter(x=>x.id!==pid);
+  renderPendingList('aPendingList',true);
+  renderPendingList('hPendingList',false);
+  renderAUserList(); updatePendingBadges();
+  toast('Account approved: @'+p.username,'ok',3000);
 }
 
-function gSheetMsg(type, text){
-  const el = document.getElementById('aSheetMsg');
-  if(!el) return;
-  el.innerHTML = `<span style="color:var(--${type==='ok'?'green':type==='err'?'red':'text3'})">${text}</span>`;
-}
-
-async function gSheetsImport(){
-  const sheetId = document.getElementById('aSheetId')?.value.trim();
-  const tab     = document.getElementById('aSheetTab')?.value.trim()||'Sheet1';
-  const logo    = document.getElementById('aLogoUrl')?.value.trim();
-  if(logo){ S.logo=logo; applyLogo(logo); }
-
-  if(!sheetId){ gSheetMsg('err','⚠ Paste your Spreadsheet ID first.'); return; }
-
-  // If no token yet, try public access first (works if sheet is shared publicly)
-  const useAuth = !!G_ACCESS_TOKEN;
-  const range   = encodeURIComponent(tab+'!A:F');
-  const url     = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=AIzaSyD_placeholder`;
-
-  gSheetMsg('syncing','<span class="spinner"></span> Importing from Google Sheets...');
-
-  try{
-    let rows;
-
-    if(useAuth){
-      // Authenticated — works on private sheets
-      const res = await fetch(
-        `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}`,
-        { headers:{ Authorization:'Bearer '+G_ACCESS_TOKEN } }
-      );
-      if(!res.ok){
-        const err=await res.json();
-        throw new Error(err.error?.message||'HTTP '+res.status);
-      }
-      const data = await res.json();
-      rows = data.values||[];
-    } else {
-      // Unauthenticated — sheet must be shared "Anyone with the link can view"
-      // Use published CSV fallback
-      const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(tab)}`;
-      const res = await fetch(csvUrl);
-      if(!res.ok) throw new Error('Could not fetch sheet. Make sure it is shared publicly OR sign in with Google above.');
-      const txt = await res.text();
-      rows = parseCSV(txt);
-    }
-
-    if(rows.length<2) throw new Error('Sheet is empty or has only a header row.');
-
-    const header = useAuth ? null : rows[0]; // CSV has header row; API may not
-    const startRow = 1;
-    const imported=[];
-
-    for(let i=startRow;i<rows.length;i++){
-      const r=rows[i];
-      const [name,badge,deptName,rank,date,status] = useAuth ? r : r;
-      if(!name?.trim()) continue;
-      const dept=S.depts.find(d=>
-        d.name.toLowerCase()===(deptName||'').trim().toLowerCase()||
-        d.abbr.toLowerCase()===(deptName||'').trim().toLowerCase()
-      );
-      if(!dept) continue;
-      const st=['active','needs','inactive','loa'].includes((status||'').trim().toLowerCase())
-        ?(status||'active').trim().toLowerCase():'active';
-      imported.push({id:'gs'+i,name:name.trim(),badge:(badge||'').trim(),
-        dept:dept.id,rank:(rank||'').trim(),date:(date||'').trim(),status:st,discord:''});
-    }
-
-    S.members=S.members.filter(m=>!m.id.startsWith('gs'));
-    S.members.push(...imported);
-    S.sheetsUrl=sheetId; // store sheet ID for re-sync
-    await save(['members','sheetsUrl','logo']);
-    renderAll();
-
-    // Setup auto-refresh
-    const interval = parseInt(document.getElementById('aRefresh')?.value)||0;
-    if(G_REFRESH_TIMER) clearInterval(G_REFRESH_TIMER);
-    if(interval>0) G_REFRESH_TIMER=setInterval(gSheetsImport, interval*1000);
-
-    gSheetMsg('ok',`✓ Imported ${imported.length} records from "${tab}".`
-      +(imported.length===0?' (No rows matched your departments — check department names in col C.)':''));
-
-  } catch(e){
-    gSheetMsg('err','✕ Import failed: '+e.message);
-  }
-}
-
-async function gSheetsExport(){
-  const sheetId = document.getElementById('aSheetId')?.value.trim();
-  const tab     = document.getElementById('aSheetTab')?.value.trim()||'Sheet1';
-  if(!sheetId){ gSheetMsg('err','⚠ Paste your Spreadsheet ID first.'); return; }
-  if(!G_ACCESS_TOKEN){ gSheetMsg('err','⚠ Sign in with Google first to export.'); return; }
-
-  gSheetMsg('syncing','<span class="spinner"></span> Exporting roster to Google Sheets...');
-
-  const header = ['Name','Badge','Department','Rank','Join Date','Status','Discord'];
-  const rows   = [header];
-  S.members.forEach(m=>{
-    const dept=S.depts.find(d=>d.id===m.dept);
-    rows.push([m.name,m.badge,dept?.abbr||'',m.rank,m.date,m.status,m.discord||'']);
-  });
-
-  try{
-    // Clear then write
-    const range = encodeURIComponent(tab+'!A1');
-    await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}:clear`,{
-      method:'POST', headers:{Authorization:'Bearer '+G_ACCESS_TOKEN,'Content-Type':'application/json'}
-    });
-
-    const writeRange = encodeURIComponent(tab+'!A1');
-    const res = await fetch(
-      `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${writeRange}?valueInputOption=RAW`,
-      {
-        method:'PUT',
-        headers:{Authorization:'Bearer '+G_ACCESS_TOKEN,'Content-Type':'application/json'},
-        body: JSON.stringify({ range: tab+'!A1', majorDimension:'ROWS', values:rows })
-      }
-    );
-    if(!res.ok){ const e=await res.json(); throw new Error(e.error?.message||'HTTP '+res.status); }
-    gSheetMsg('ok',`✓ Exported ${rows.length-1} members to "${tab}".`);
-  } catch(e){
-    gSheetMsg('err','✕ Export failed: '+e.message);
-  }
-}
-
-// Initialize Google auth once GIS script loads
-window.addEventListener('load',()=>{ setTimeout(initGoogleAuth, 500); });
-
-function parseCSV(txt){
-  return txt.trim().split('\n').map(line=>{
-    const r=[];let c='',q=false;
-    for(const ch of line){ if(ch==='"'){ q=!q; } else if(ch===','&&!q){ r.push(c); c=''; } else { c+=ch; } }
-    r.push(c); return r;
-  });
+async function denyPending(pid){
+  if(!confirm('Remove this pending registration?')) return;
+  await dbDelete('fudt_pending',pid);
+  S.pending=S.pending.filter(x=>x.id!==pid);
+  renderPendingList('aPendingList',true);
+  renderPendingList('hPendingList',false);
+  updatePendingBadges();
 }
 
 // ════════════════════════════════════════════════════════
@@ -1732,12 +1687,12 @@ function parseCSV(txt){
 function openHC(){
   if(CU?.role!=='hc') return;
   const dept=S.depts.find(d=>d.id===CU.deptId);
-  document.getElementById('hcDeptInfo').innerHTML=`<strong>Your Department:</strong> ${dept?.name||'Unknown'} (${dept?.abbr||'—'})<br>You can add/edit members and approve registrations for your department. You cannot access other departments or create Admin accounts.`;
+  document.getElementById('hcDeptInfo').innerHTML=`<strong>Your Department:</strong> ${dept?.name||'Unknown'} (${dept?.abbr||'—'})<br>You can add/edit members and approve requests for your department.`;
   const rs=document.getElementById('hMemRank');
   rs.innerHTML=(S.ranks[CU.deptId]||[]).sort((a,b)=>a.order-b.order).map(r=>`<option value="${r.name}">${r.name}</option>`).join('');
   document.getElementById('modalHC').classList.add('open');
   renderHCMemberList(); renderHCReqs();
-  renderPendingList('hPendingList', false);
+  renderPendingList('hPendingList',false);
   updatePendingBadges();
 }
 
@@ -1755,27 +1710,30 @@ async function hcAddMember(){
   const name=v('hMemName').trim(),badge=v('hMemBadge').trim(),rank=v('hMemRank');
   const status=v('hMemStatus'),date=v('hMemDate'),discord=v('hMemDiscord').trim();
   if(!name||!rank){ alert('Name and rank required.'); return; }
-  S.members.push({id:'m'+uid(),name,badge,dept:CU.deptId,rank,date,status,discord});
-  await save(['members']);
+  const row={id:'m'+uid(),name,badge,dept:CU.deptId,rank,join_date:date,status,discord};
+  await dbUpsert('fudt_members',row);
+  S.members.push({id:row.id,name,badge,dept:CU.deptId,rank,date,status,discord});
   ['hMemName','hMemBadge','hMemDate','hMemDiscord'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
   renderHCMemberList(); renderAll();
+  toast('Member added: '+name,'ok',3000);
 }
 
 async function hcDelMember(id){
   if(!confirm('Remove member?')) return;
+  await dbDelete('fudt_members',id);
   S.members=S.members.filter(m=>m.id!==id);
-  await save(['members']); renderHCMemberList(); renderAll();
+  renderHCMemberList(); renderAll();
 }
 
 function renderHCMemberList(){
-  const el=document.getElementById('hMemberList');
+  const el=document.getElementById('hMemberList'); if(!el) return;
   const dm=S.members.filter(m=>m.dept===CU?.deptId);
   if(!dm.length){ el.innerHTML='<div class="empty">No members yet.</div>'; return; }
   el.innerHTML=dm.map(m=>`
     <div class="list-row">
       <div class="list-row-l"><div>
         <div class="list-row-name">${m.name}</div>
-        <div class="list-row-sub">${m.badge} · ${m.rank} · ${m.status.toUpperCase()}</div>
+        <div class="list-row-sub">${m.badge||''} · ${m.rank} · ${(m.status||'').toUpperCase()}</div>
       </div></div>
       <div class="list-row-acts">
         <select class="usel" onchange="quickStatus('${m.id}',this.value)">
@@ -1792,20 +1750,19 @@ function renderHCMemberList(){
 function renderHCReqs(){
   const el=document.getElementById('hReqList'); if(!el) return;
   const all=[
-    ...S.loas.filter(r=>r.dept===CU?.deptId).map(r=>({...r,_t:'loa'})),
-    ...S.movs.filter(r=>r.deptFrom===CU?.deptId).map(r=>({...r,_t:'mov'}))
+    ...S.loas.filter(r=>r.dept===CU?.deptId).map(r=>({...r,_t:'loas'})),
+    ...S.movs.filter(r=>r.deptFrom===CU?.deptId).map(r=>({...r,_t:'movs'}))
   ].sort((a,b)=>b.ts-a.ts);
-  if(!all.length){ el.innerHTML='<div class="empty">No requests for your department.</div>'; return; }
+  if(!all.length){ el.innerHTML='<div class="empty">No requests for your department yet.</div>'; return; }
   el.innerHTML='<div class="req-grid">'+all.map(r=>`
-    <div class="req-card">
+    <div class="req-card${r.status==='pending'?' new-flash':''}">
       <div class="req-card-body">
-        <div class="req-card-hdr"><span class="rtag ${r._t==='loa'?'rt-loa':'rt-mov'}">${r._t==='loa'?'LOA':(r.type||'MOV').toUpperCase()}</span><span class="rtag rt-${r.status==='pending'?'pend':r.status==='approved'?'appr':'deni'}">${r.status.toUpperCase()}</span></div>
+        <div class="req-card-hdr"><span class="rtag ${r._t==='loas'?'rt-loa':'rt-mov'}">${r._t==='loas'?'LOA':(r.type||'MOV').toUpperCase()}</span><span class="rtag rt-${r.status==='pending'?'pend':r.status==='approved'?'appr':'deni'}">${r.status.toUpperCase()}</span></div>
         <div class="req-name">${r.name} — ${r.badge}</div>
-        <div class="req-meta">${r._t==='loa'?`Period: ${fmtDate(r.start)} → ${fmtDate(r.end)}<br>`:`Type: ${r.type}<br>`}Reason: ${r.reason||r.rankFrom||'—'}<br>@${r.by} · ${new Date(r.ts).toLocaleString()}</div>
+        <div class="req-meta">${r._t==='loas'?`Period: ${fmtDate(r.start)} → ${fmtDate(r.end)}<br>`:`Type: ${r.type||'—'}<br>`}Reason: ${r.reason||'—'}<br>@${r.by} · ${new Date(r.ts).toLocaleString()}</div>
       </div>
       <div class="req-acts">
-        <button class="btn-appr" onclick="resolveReq('${r._t}','${r.id}','approved')">APPROVE</button>
-        <button class="btn-deny" onclick="resolveReq('${r._t}','${r.id}','denied')">DENY</button>
+        ${r.status==='pending'?`<button class="btn-appr" onclick="resolveReq('${r._t}','${r.id}','approved')">APPROVE</button><button class="btn-deny" onclick="resolveReq('${r._t}','${r.id}','denied')">DENY</button>`:'<span style="font-family:var(--mono);font-size:9px;color:var(--text3);">'+r.status.toUpperCase()+'</span>'}
       </div>
     </div>`).join('')+'</div>';
 }
@@ -1814,21 +1771,33 @@ function renderHCReqs(){
 //  HELPERS
 // ════════════════════════════════════════════════════════
 function v(id){ const el=document.getElementById(id); return el?el.value:''; }
-function uid(){ return '_'+Math.random().toString(36).slice(2,10)+Date.now().toString(36); }
-
-function showMsg(el,type,text){
-  el.className='fmsg '+type; el.textContent=text; el.style.display='block';
-  setTimeout(()=>el.style.display='none',5000);
-}
+function uid(){ return Math.random().toString(36).slice(2,9)+Date.now().toString(36); }
+function showMsg(el,type,text){ el.className='fmsg '+type; el.textContent=text; el.style.display='block'; setTimeout(()=>el.style.display='none',5000); }
 
 // ════════════════════════════════════════════════════════
 //  BOOT
 // ════════════════════════════════════════════════════════
 (async function boot(){
-  setSyncStatus('syncing','CONNECTING...');
-  await loadAll();
-  await seed();
-  if(S.logo) applyLogo(S.logo);
+  const cfg = loadConfig();
+  if(cfg){
+    initFromConfig(cfg);
+    // Quick connection test
+    try{
+      await SB.from('fudt_users').select('id').limit(1);
+      document.getElementById('setupOverlay').classList.add('hidden');
+      document.getElementById('loginOverlay').style.display = 'flex';
+      await loadAll();
+      await seed();
+      setSyncStatus('ok','CONNECTED · Supabase');
+    } catch(e){
+      // Saved config failed, show setup again
+      document.getElementById('sbUrl').value = cfg.url||'';
+      document.getElementById('sbKey').value = cfg.key||'';
+      setSyncStatus('err','RECONNECT NEEDED');
+    }
+  } else {
+    setSyncStatus('err','SETUP REQUIRED');
+  }
 })();
 </script>
 </body>
