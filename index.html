@@ -2135,20 +2135,26 @@ function loadWebhookUI(){
 
 // ── Standard field names ──
 const GS_FIELDS = [
-  { key:'name',        label:'Name',               writable:true,  promotionOnly:false },
-  { key:'discord',     label:'Discord ID',          writable:true,  promotionOnly:false },
-  { key:'badge',       label:'Callsign / Paygrade', writable:true,  promotionOnly:false },
-  { key:'rank',        label:'Actual Rank',         writable:true,  promotionOnly:true  },
-  { key:'status',      label:'Status',              writable:false, promotionOnly:false }, // DB only
-  { key:'timezone',    label:'Time Zone',           writable:false, promotionOnly:false }, // DB only
-  { key:'loa',         label:'LOA',                 writable:false, promotionOnly:false }, // DB only
-  { key:'resigned',    label:'Resigned',            writable:false, promotionOnly:false }, // DB only
-  { key:'terminated',  label:'Terminated',          writable:false, promotionOnly:false }, // DB only
-  { key:'join_date',   label:'Hire Date',           writable:true,  promotionOnly:false },
-  { key:'mov_date',    label:'Mov. Date',            writable:true,  promotionOnly:false },
-  { key:'time_in_rank',label:'Time in Rank',        writable:true,  promotionOnly:false },
-  { key:'time_in_dept',label:'Time in Department',  writable:true,  promotionOnly:false },
-  { key:'time_roster', label:'Time on Roster',      writable:true,  promotionOnly:false },
+  { key:'name',             label:'Name',                  writable:true,  promotionOnly:false },
+  { key:'discord',          label:'Discord ID',             writable:true,  promotionOnly:false },
+  { key:'badge',            label:'Callsign / Paygrade',    writable:true,  promotionOnly:false },
+  { key:'rank',             label:'Actual Rank',            writable:true,  promotionOnly:true  },
+  { key:'status',           label:'Status',                 writable:false, promotionOnly:false }, // DB only
+  { key:'timezone',         label:'Time Zone',              writable:false, promotionOnly:false }, // DB only
+  { key:'loa',              label:'LOA',                    writable:false, promotionOnly:false }, // DB only
+  { key:'resigned',         label:'Resigned',               writable:false, promotionOnly:false }, // DB only
+  { key:'terminated',       label:'Terminated',             writable:false, promotionOnly:false }, // DB only
+  { key:'join_date',        label:'Hire Date',              writable:true,  promotionOnly:false },
+  { key:'mov_date',         label:'Mov. Date',              writable:true,  promotionOnly:false },
+  { key:'time_in_rank',     label:'Time in Rank',           writable:true,  promotionOnly:false },
+  { key:'time_in_dept',     label:'Time in Department',     writable:true,  promotionOnly:false },
+  { key:'time_roster',      label:'Time on Roster',         writable:true,  promotionOnly:false },
+  // ── Extended fields from department rosters ──
+  { key:'message_user',     label:'Message User',           writable:true,  promotionOnly:false },
+  { key:'notes',            label:'Notes',                  writable:true,  promotionOnly:false },
+  { key:'activity_warning', label:'Activity Warning',       writable:true,  promotionOnly:false },
+  { key:'strike_1',         label:'Strike 1',               writable:true,  promotionOnly:false },
+  { key:'strike_2',         label:'Strike 2',               writable:true,  promotionOnly:false },
 ];
 
 // Fields the Main Roster write is BLOCKED for (website never edits these on main roster)
