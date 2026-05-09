@@ -428,16 +428,21 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
         <div id="aRankList" style="margin-top:1rem;"></div>
       </div>
       <div class="mpanel" id="ap-members">
+        <div class="infobox" style="border-color:rgba(52,168,83,.3);background:rgba(52,168,83,.04);">
+          <strong style="color:#34a853;">📊 SHEET SYNC ON ADD</strong><br>
+          When you add a member here they are saved to the website database, pushed to the <strong>Employee Database</strong> sheet, and their core info is added as a new row on the <strong>Main Roster</strong> sheet — automatically.
+        </div>
+        <div style="font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin-bottom:.75rem;">CORE INFO</div>
         <div class="frow">
-          <div class="fg"><label class="fl">Full Name</label><input class="fi" id="aMemName" placeholder="J. Smith"></div>
-          <div class="fg"><label class="fl">Badge / Employee ID</label><input class="fi" id="aMemBadge" placeholder="SA-0001"></div>
+          <div class="fg"><label class="fl">Full Name *</label><input class="fi" id="aMemName" placeholder="J. Smith"></div>
+          <div class="fg"><label class="fl">Badge / Employee ID *</label><input class="fi" id="aMemBadge" placeholder="00001"></div>
         </div>
         <div class="frow">
-          <div class="fg"><label class="fl">Department</label><select class="fs" id="aMemDept" onchange="loadMemRanks('aMemDept','aMemRank')"></select></div>
-          <div class="fg"><label class="fl">Rank</label><select class="fs" id="aMemRank"></select></div>
+          <div class="fg"><label class="fl">Department *</label><select class="fs" id="aMemDept" onchange="loadMemRanks('aMemDept','aMemRank')"></select></div>
+          <div class="fg"><label class="fl">Rank *</label><select class="fs" id="aMemRank"></select></div>
         </div>
         <div class="frow">
-          <div class="fg"><label class="fl">Join Date</label><input class="fi" id="aMemDate" type="date"></div>
+          <div class="fg"><label class="fl">Hire Date</label><input class="fi" id="aMemDate" type="date"></div>
           <div class="fg"><label class="fl">Status</label>
             <select class="fs" id="aMemStatus">
               <option value="active">Active</option>
@@ -447,8 +452,42 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
             </select>
           </div>
         </div>
-        <div class="fg"><label class="fl">Discord Username (optional)</label><input class="fi" id="aMemDiscord" placeholder="username#0000"></div>
-        <button class="fbtn" style="width:100%;" onclick="adminAddMember()">+ ADD TO ROSTER</button>
+        <div style="font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin:.75rem 0 .75rem;">CONTACT & IDENTITY</div>
+        <div class="frow">
+          <div class="fg"><label class="fl">Discord ID</label><input class="fi" id="aMemDiscord" placeholder="username or ID"></div>
+          <div class="fg"><label class="fl">Message User (in-game)</label><input class="fi" id="aMemMsgUser" placeholder="In-game username"></div>
+        </div>
+        <div class="fg"><label class="fl">Time Zone</label>
+          <select class="fs" id="aMemTimezone">
+            <option value="">— Select —</option>
+            <option>EST</option><option>CST</option><option>MST</option><option>PST</option>
+            <option>GMT</option><option>CET</option><option>AEST</option><option>Other</option>
+          </select>
+        </div>
+        <div style="font-family:var(--mono);font-size:9px;letter-spacing:2px;color:var(--text3);text-transform:uppercase;margin:.75rem 0 .75rem;">NOTES & DISCIPLINE</div>
+        <div class="fg"><label class="fl">Notes</label><textarea class="fta" id="aMemNotes" placeholder="Any notes about this member..." style="min-height:60px;"></textarea></div>
+        <div class="frow">
+          <div class="fg"><label class="fl">Activity Warning</label>
+            <select class="fs" id="aMemActWarn">
+              <option value="">None</option>
+              <option value="1">⚠ Warning Issued</option>
+            </select>
+          </div>
+          <div class="fg"><label class="fl">Strike 1</label>
+            <select class="fs" id="aMemStrike1">
+              <option value="">None</option>
+              <option value="1">✗ Strike 1</option>
+            </select>
+          </div>
+          <div class="fg"><label class="fl">Strike 2</label>
+            <select class="fs" id="aMemStrike2">
+              <option value="">None</option>
+              <option value="1">✗ Strike 2</option>
+            </select>
+          </div>
+        </div>
+        <div class="fmsg" id="addMemberMsg"></div>
+        <button class="fbtn" style="width:100%;margin-top:.5rem;" onclick="adminAddMember()">+ ADD TO ROSTER</button>
       </div>
       <div class="mpanel" id="ap-users">
         <div class="infobox">
@@ -1767,15 +1806,164 @@ function loadMemRanks(deptElId, rankElId){
   rankEl.innerHTML=(S.ranks[deptId]||[]).sort((a,b)=>a.order-b.order).map(r=>`<option value="${r.name}">${r.name}</option>`).join('');
 }
 
+// ── Push a new member to Employee Database sheet + Main Roster sheet ──
+async function pushMemberToSheets(member){
+  loadGSData();
+  const deptId = member.dept;
+  const results = { empdb: false, main: false, dept: false };
+
+  // Build a map of fieldKey → value for this member
+  const fieldValues = {
+    message_user:     member.message_user || '',
+    badge:            member.badge        || '',
+    name:             member.name         || '',
+    discord:          member.discord      || '',
+    join_date:        member.join_date    || '',
+    status:           member.status       || 'Active',
+    notes:            member.notes        || '',
+    activity_warning: member.activity_warning || '',
+    strike_1:         member.strike_1     || '',
+    strike_2:         member.strike_2     || '',
+    rank:             member.rank         || '',
+    timezone:         member.timezone     || '',
+    mov_date:         member.mov_date     || '',
+    time_in_rank:     member.time_in_rank || '',
+    time_in_dept:     member.time_in_dept || '',
+    time_roster:      member.time_roster  || '',
+  };
+
+  // Helper: build rowData dict using field mapping for a given dept config
+  function buildRowData(cfgDeptId){
+    const mapping = GS_MAPPINGS[cfgDeptId] || {};
+    const rowData = {};
+    for(const f of GS_FIELDS){
+      // Get the sheet column name — from mapping, or auto-detect default label
+      const colName = mapping[f.key] || f.label;
+      const val = fieldValues[f.key];
+      if(val !== undefined && val !== '') rowData[colName] = val;
+    }
+    return rowData;
+  }
+
+  // 1. Push to Employee Database sheet (role = 'empdb') — this dept or org-wide
+  const empdbEntry = Object.entries(GS_CONFIGS).find(([,c]) => c.role === 'empdb');
+  if(empdbEntry){
+    const [empDeptId, empCfg] = empdbEntry;
+    try{
+      const rowData = buildRowData(empDeptId);
+      await gsAppendRow(empCfg.url, empCfg.tab, rowData);
+      results.empdb = true;
+      gsLog('ok', `Pushed ${member.name} → Employee Database sheet`, deptId);
+    } catch(e){
+      gsLog('err', `Failed to push ${member.name} to Employee DB sheet: ${e.message}`, deptId);
+    }
+  }
+
+  // 2. Push to Main Roster sheet (role = 'main')
+  const mainEntry = Object.entries(GS_CONFIGS).find(([,c]) => c.role === 'main');
+  if(mainEntry){
+    const [mainDeptId, mainCfg] = mainEntry;
+    try{
+      // Main roster only gets allowed fields
+      const mapping = GS_MAPPINGS[mainDeptId] || {};
+      const rowData = {};
+      for(const key of ['name','badge','rank','discord','join_date','status','message_user']){
+        const f = GS_FIELDS.find(x=>x.key===key);
+        const colName = mapping[key] || f?.label || key;
+        if(fieldValues[key]) rowData[colName] = fieldValues[key];
+      }
+      await gsAppendRow(mainCfg.url, mainCfg.tab, rowData);
+      results.main = true;
+      gsLog('ok', `Pushed ${member.name} → Main Roster sheet`, deptId);
+    } catch(e){
+      gsLog('err', `Failed to push ${member.name} to Main Roster sheet: ${e.message}`, deptId);
+    }
+  }
+
+  // 3. Push to Department Roster sheet (role = 'dept') for this dept
+  const deptCfg = GS_CONFIGS[deptId];
+  if(deptCfg && deptCfg.role === 'dept'){
+    try{
+      const rowData = buildRowData(deptId);
+      await gsAppendRow(deptCfg.url, deptCfg.tab, rowData);
+      results.dept = true;
+      gsLog('ok', `Pushed ${member.name} → Dept Roster sheet`, deptId);
+    } catch(e){
+      gsLog('err', `Failed to push ${member.name} to Dept Roster sheet: ${e.message}`, deptId);
+    }
+  }
+
+  return results;
+}
+
 async function adminAddMember(){
-  const name=v('aMemName').trim(),badge=v('aMemBadge').trim(),dept=v('aMemDept'),rank=v('aMemRank');
-  const date=v('aMemDate'),status=v('aMemStatus'),discord=v('aMemDiscord').trim();
-  if(!name||!dept||!rank){ alert('Name, department and rank required.'); return; }
-  const row={id:'m'+uid(),name,badge,dept,rank,join_date:date,status,discord};
-  await dbUpsert('fudt_members',row);
-  S.members.push({id:row.id,name,badge,dept,rank,date,status,discord});
-  ['aMemName','aMemBadge','aMemDate','aMemDiscord'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
-  renderAll(); toast('Member added: '+name,'ok',3000);
+  const name     = v('aMemName').trim();
+  const badge    = v('aMemBadge').trim();
+  const dept     = v('aMemDept');
+  const rank     = v('aMemRank');
+  const date     = v('aMemDate');
+  const status   = v('aMemStatus');
+  const discord  = v('aMemDiscord').trim();
+  const msgUser  = v('aMemMsgUser').trim();
+  const timezone = v('aMemTimezone');
+  const notes    = document.getElementById('aMemNotes')?.value.trim()||'';
+  const actWarn  = v('aMemActWarn');
+  const strike1  = v('aMemStrike1');
+  const strike2  = v('aMemStrike2');
+  const msgEl    = document.getElementById('addMemberMsg');
+
+  if(!name||!dept||!rank){ showMsg(msgEl,'err','⚠ Name, department and rank are required.'); return; }
+
+  showMsg(msgEl,'ok','Saving...');
+
+  const row = {
+    id: 'm'+uid(),
+    name, badge, dept, rank,
+    join_date: date,
+    status, discord,
+    message_user:     msgUser,
+    timezone,
+    notes,
+    activity_warning: actWarn,
+    strike_1:         strike1,
+    strike_2:         strike2,
+    mov_date:         '',
+    time_in_rank:     '',
+    time_in_dept:     '',
+    time_roster:      '',
+    updated_at:       new Date().toISOString(),
+  };
+
+  // 1. Save to Supabase (Employee Database)
+  await dbUpsert('fudt_members', row);
+  S.members.push({...row, date});
+
+  // 2. Push to Google Sheets (Employee DB sheet + Main Roster sheet + Dept sheet)
+  const sheetResults = await pushMemberToSheets(row);
+  const pushed = [
+    sheetResults.empdb && 'Employee DB',
+    sheetResults.main  && 'Main Roster',
+    sheetResults.dept  && 'Dept Roster',
+  ].filter(Boolean);
+
+  // 3. Audit log
+  await auditLog('member_added', dept, `Added ${name} (${badge})`, { rank, status });
+
+  // 4. Clear form
+  ['aMemName','aMemBadge','aMemDate','aMemDiscord','aMemMsgUser','aMemNotes'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  ['aMemActWarn','aMemStrike1','aMemStrike2'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+
+  renderAll();
+
+  const sheetMsg = pushed.length
+    ? ` · Pushed to: ${pushed.join(', ')}`
+    : ' · No sheets configured yet';
+  showMsg(msgEl,'ok','✓ '+name+' added'+sheetMsg);
+  toast('Member added: '+name,'ok',4000);
 }
 
 async function adminCreateUser(){
@@ -2135,26 +2323,20 @@ function loadWebhookUI(){
 
 // ── Standard field names ──
 const GS_FIELDS = [
-  { key:'name',             label:'Name',                  writable:true,  promotionOnly:false },
-  { key:'discord',          label:'Discord ID',             writable:true,  promotionOnly:false },
-  { key:'badge',            label:'Callsign / Paygrade',    writable:true,  promotionOnly:false },
-  { key:'rank',             label:'Actual Rank',            writable:true,  promotionOnly:true  },
-  { key:'status',           label:'Status',                 writable:false, promotionOnly:false }, // DB only
-  { key:'timezone',         label:'Time Zone',              writable:false, promotionOnly:false }, // DB only
-  { key:'loa',              label:'LOA',                    writable:false, promotionOnly:false }, // DB only
-  { key:'resigned',         label:'Resigned',               writable:false, promotionOnly:false }, // DB only
-  { key:'terminated',       label:'Terminated',             writable:false, promotionOnly:false }, // DB only
-  { key:'join_date',        label:'Hire Date',              writable:true,  promotionOnly:false },
-  { key:'mov_date',         label:'Mov. Date',              writable:true,  promotionOnly:false },
-  { key:'time_in_rank',     label:'Time in Rank',           writable:true,  promotionOnly:false },
-  { key:'time_in_dept',     label:'Time in Department',     writable:true,  promotionOnly:false },
-  { key:'time_roster',      label:'Time on Roster',         writable:true,  promotionOnly:false },
-  // ── Extended fields from department rosters ──
-  { key:'message_user',     label:'Message User',           writable:true,  promotionOnly:false },
-  { key:'notes',            label:'Notes',                  writable:true,  promotionOnly:false },
-  { key:'activity_warning', label:'Activity Warning',       writable:true,  promotionOnly:false },
-  { key:'strike_1',         label:'Strike 1',               writable:true,  promotionOnly:false },
-  { key:'strike_2',         label:'Strike 2',               writable:true,  promotionOnly:false },
+  { key:'name',        label:'Name',               writable:true,  promotionOnly:false },
+  { key:'discord',     label:'Discord ID',          writable:true,  promotionOnly:false },
+  { key:'badge',       label:'Callsign / Paygrade', writable:true,  promotionOnly:false },
+  { key:'rank',        label:'Actual Rank',         writable:true,  promotionOnly:true  },
+  { key:'status',      label:'Status',              writable:false, promotionOnly:false }, // DB only
+  { key:'timezone',    label:'Time Zone',           writable:false, promotionOnly:false }, // DB only
+  { key:'loa',         label:'LOA',                 writable:false, promotionOnly:false }, // DB only
+  { key:'resigned',    label:'Resigned',            writable:false, promotionOnly:false }, // DB only
+  { key:'terminated',  label:'Terminated',          writable:false, promotionOnly:false }, // DB only
+  { key:'join_date',   label:'Hire Date',           writable:true,  promotionOnly:false },
+  { key:'mov_date',    label:'Mov. Date',            writable:true,  promotionOnly:false },
+  { key:'time_in_rank',label:'Time in Rank',        writable:true,  promotionOnly:false },
+  { key:'time_in_dept',label:'Time in Department',  writable:true,  promotionOnly:false },
+  { key:'time_roster', label:'Time on Roster',      writable:true,  promotionOnly:false },
 ];
 
 // Fields the Main Roster write is BLOCKED for (website never edits these on main roster)
@@ -2210,6 +2392,18 @@ async function gsWrite(url, tab, rowIndex, colHeader, value){
     body: JSON.stringify({ action:'write', tab, row: rowIndex, col: colHeader, value })
   });
   if(!res.ok) throw new Error(`Write HTTP ${res.status}`);
+  return await res.json();
+}
+
+// ── Append a new row to a sheet ──
+// rowData = { 'Column Header': value, ... }
+async function gsAppendRow(url, tab, rowData){
+  const res = await fetch(url, {
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ action:'append', tab, rowData })
+  });
+  if(!res.ok) throw new Error(`Append HTTP ${res.status}`);
   return await res.json();
 }
 
@@ -2749,17 +2943,33 @@ function doGet(e) {
 }
 function doPost(e) {
   var body = JSON.parse(e.postData.contents);
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(body.tab);
+  if (!sheet) return json({error:'Tab not found: ' + body.tab});
+
+  // WRITE: update a single cell
   if (body.action === 'write') {
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var sheet = ss.getSheetByName(body.tab);
-    if (!sheet) return json({error:'Tab not found'});
     var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
     var colIdx = headers.indexOf(body.col);
     if (colIdx < 0) return json({error:'Column not found: '+body.col});
     sheet.getRange(body.row, colIdx+1).setValue(body.value);
     return json({ok: true});
   }
-  return json({error:'Unknown action'});
+
+  // APPEND: add a new row using column header names as keys
+  if (body.action === 'append') {
+    var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    var newRow = new Array(headers.length).fill('');
+    var rowData = body.rowData || {};
+    for (var key in rowData) {
+      var idx = headers.indexOf(key);
+      if (idx >= 0) newRow[idx] = rowData[key];
+    }
+    sheet.appendRow(newRow);
+    return json({ok: true, appended: true});
+  }
+
+  return json({error:'Unknown action: ' + body.action});
 }
 function json(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj))
