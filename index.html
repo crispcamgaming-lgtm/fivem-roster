@@ -1835,89 +1835,107 @@ function loadMemRanks(deptElId, rankElId){
 }
 
 // ── Push a new member to Employee Database sheet + Main Roster sheet ──
+// ── Convert internal status value to human-readable sheet text ──
+function statusToSheet(s){
+  return s==='active'?'Active':s==='loa'?'LOA':s==='needs'?'Needs Improvement':s==='inactive'?'Inactive':s||'Active';
+}
+
+// ── Build a rowData object for a sheet using that sheet's saved field mapping ──
+// cfgDeptId = the key in GS_CONFIGS for this sheet
+// member    = the member object
+// allowedKeys = optional array of fieldKeys to restrict to (e.g. main roster only allows certain fields)
+function buildMappedRowData(cfgDeptId, member, allowedKeys){
+  const mapping = GS_MAPPINGS[cfgDeptId] || {};
+  // If no mapping saved at all, warn in log and return empty — admin must fill in field map
+  if(!Object.keys(mapping).length){
+    gsLog('warn', `No field mapping for sheet config "${cfgDeptId}" — fill in Field Mapping in Admin Panel`, cfgDeptId);
+  }
+  const memberValues = {
+    message_user:     member.message_user     || '',
+    badge:            member.badge            || '',
+    name:             member.name             || '',
+    discord:          member.discord          || '',
+    join_date:        member.join_date        || '',
+    status:           statusToSheet(member.status),
+    notes:            member.notes            || '',
+    activity_warning: member.activity_warning ? '✓' : '',
+    strike_1:         member.strike_1         ? '✓' : '',
+    strike_2:         member.strike_2         ? '✓' : '',
+    rank:             member.rank             || '',
+    timezone:         member.timezone         || '',
+    mov_date:         member.mov_date         || '',
+    time_in_rank:     member.time_in_rank     || '',
+    time_in_dept:     member.time_in_dept     || '',
+    time_roster:      member.time_roster      || '',
+  };
+  const rowData = {};
+  const keys = allowedKeys || Object.keys(memberValues);
+  for(const key of keys){
+    const colName = mapping[key]; // only use what admin explicitly mapped
+    if(!colName) continue;        // unmapped field → skip (never guess)
+    const val = memberValues[key];
+    if(val !== undefined && val !== '') rowData[colName] = val;
+  }
+  return rowData;
+}
+
 async function pushMemberToSheets(member){
   loadGSData();
   const deptId = member.dept;
   const results = { empdb: false, main: false, dept: false };
 
-  // Build a map of fieldKey → value for this member
-  const fieldValues = {
-    message_user:     member.message_user || '',
-    badge:            member.badge        || '',
-    name:             member.name         || '',
-    discord:          member.discord      || '',
-    join_date:        member.join_date    || '',
-    status:           member.status       || 'Active',
-    notes:            member.notes        || '',
-    activity_warning: member.activity_warning || '',
-    strike_1:         member.strike_1     || '',
-    strike_2:         member.strike_2     || '',
-    rank:             member.rank         || '',
-    timezone:         member.timezone     || '',
-    mov_date:         member.mov_date     || '',
-    time_in_rank:     member.time_in_rank || '',
-    time_in_dept:     member.time_in_dept || '',
-    time_roster:      member.time_roster  || '',
-  };
-
-  // Helper: build rowData dict using field mapping for a given dept config
-  function buildRowData(cfgDeptId){
-    const mapping = GS_MAPPINGS[cfgDeptId] || {};
-    const rowData = {};
-    for(const f of GS_FIELDS){
-      // Get the sheet column name — from mapping, or auto-detect default label
-      const colName = mapping[f.key] || f.label;
-      const val = fieldValues[f.key];
-      if(val !== undefined && val !== '') rowData[colName] = val;
-    }
-    return rowData;
-  }
-
-  // 1. Push to Employee Database sheet (role = 'empdb') — this dept or org-wide
+  // ── 1. Employee Database sheet ──
   const empdbEntry = Object.entries(GS_CONFIGS).find(([,c]) => c.role === 'empdb');
   if(empdbEntry){
     const [empDeptId, empCfg] = empdbEntry;
     try{
-      const rowData = buildRowData(empDeptId);
-      await gsAppendRow(empCfg.url, empCfg.tab, rowData);
-      results.empdb = true;
-      gsLog('ok', `Pushed ${member.name} → Employee Database sheet`, deptId);
+      const rowData = buildMappedRowData(empDeptId, member);
+      if(!Object.keys(rowData).length){
+        gsLog('warn', `Employee DB push skipped for ${member.name} — no field mapping set. Go to Admin → Google Sheets → Field Mapping for this sheet.`, deptId);
+      } else {
+        await gsAppendRow(empCfg.url, empCfg.tab, rowData);
+        results.empdb = true;
+        gsLog('ok', `Pushed ${member.name} → Employee Database (${Object.keys(rowData).join(', ')})`, deptId);
+      }
     } catch(e){
-      gsLog('err', `Failed to push ${member.name} to Employee DB sheet: ${e.message}`, deptId);
+      gsLog('err', `Failed to push ${member.name} to Employee DB: ${e.message}`, deptId);
     }
   }
 
-  // 2. Push to Main Roster sheet (role = 'main')
+  // ── 2. Main / Master Roster sheet ──
+  // Main roster only allows non-sensitive fields
   const mainEntry = Object.entries(GS_CONFIGS).find(([,c]) => c.role === 'main');
   if(mainEntry){
     const [mainDeptId, mainCfg] = mainEntry;
     try{
-      // Main roster only gets allowed fields
-      const mapping = GS_MAPPINGS[mainDeptId] || {};
-      const rowData = {};
-      for(const key of ['name','badge','rank','discord','join_date','status','message_user']){
-        const f = GS_FIELDS.find(x=>x.key===key);
-        const colName = mapping[key] || f?.label || key;
-        if(fieldValues[key]) rowData[colName] = fieldValues[key];
+      const allowed = ['name','badge','rank','join_date','status','message_user','activity_warning','strike_1','notes'];
+      const rowData = buildMappedRowData(mainDeptId, member, allowed);
+      if(!Object.keys(rowData).length){
+        gsLog('warn', `Master Roster push skipped for ${member.name} — no field mapping set. Go to Admin → Google Sheets → Field Mapping for the Main Roster sheet.`, deptId);
+      } else {
+        await gsAppendRow(mainCfg.url, mainCfg.tab, rowData);
+        results.main = true;
+        gsLog('ok', `Pushed ${member.name} → Master Roster (${Object.keys(rowData).join(', ')})`, deptId);
       }
-      await gsAppendRow(mainCfg.url, mainCfg.tab, rowData);
-      results.main = true;
-      gsLog('ok', `Pushed ${member.name} → Main Roster sheet`, deptId);
     } catch(e){
-      gsLog('err', `Failed to push ${member.name} to Main Roster sheet: ${e.message}`, deptId);
+      gsLog('err', `Failed to push ${member.name} to Master Roster: ${e.message}`, deptId);
     }
   }
 
-  // 3. Push to Department Roster sheet (role = 'dept') for this dept
+  // ── 3. Department Roster sheet ──
   const deptCfg = GS_CONFIGS[deptId];
   if(deptCfg && deptCfg.role === 'dept'){
     try{
-      const rowData = buildRowData(deptId);
-      await gsAppendRow(deptCfg.url, deptCfg.tab, rowData);
-      results.dept = true;
-      gsLog('ok', `Pushed ${member.name} → Dept Roster sheet`, deptId);
+      const rowData = buildMappedRowData(deptId, member);
+      if(!Object.keys(rowData).length){
+        gsLog('warn', `Dept Roster push skipped for ${member.name} — no field mapping set.`, deptId);
+      } else {
+        await gsAppendRow(deptCfg.url, deptCfg.tab, rowData);
+        results.dept = true;
+        gsLog('ok', `Pushed ${member.name} → Dept Roster (${Object.keys(rowData).join(', ')})`, deptId);
+      }
     } catch(e){
-      gsLog('err', `Failed to push ${member.name} to Dept Roster sheet: ${e.message}`, deptId);
+      gsLog('err', `Failed to push ${member.name} to Dept Roster: ${e.message}`, deptId);
     }
   }
 
@@ -2696,9 +2714,17 @@ async function gsUpdateMemberInSheets(member, changedFields){
         const f = GS_FIELDS.find(x => x.key === fieldKey);
         if(!f) continue;
         const colName = mapping[fieldKey] || f.label;
+        // Map status values to sheet-friendly text
+        let writeVal = newVal;
+        if(fieldKey === 'status'){
+          writeVal = newVal === 'active' ? 'Active'
+                   : newVal === 'loa'    ? 'LOA'
+                   : newVal === 'needs'  ? 'Needs Improvement'
+                   : newVal === 'inactive'? 'Inactive' : newVal;
+        }
         const colIdx = headers.findIndex(h => (h||'').toLowerCase().trim() === colName.toLowerCase().trim());
         if(colIdx < 0) continue;
-        await gsWrite(cfg.url, cfg.tab, sheetRowNum, headers[colIdx], newVal);
+        await gsWrite(cfg.url, cfg.tab, sheetRowNum, headers[colIdx], writeVal);
       }
       gsLog('ok', `Updated ${member.name} in sheet "${cfg.tab}" — fields: ${Object.keys(changedFields).join(', ')}`, deptId);
     } catch(e){
