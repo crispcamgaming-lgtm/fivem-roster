@@ -534,9 +534,8 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
         </div>
 
         <div class="infobox" style="border-color:rgba(52,168,83,.3);background:rgba(52,168,83,.04);">
-          <strong style="color:#34a853;">SETUP — Google Apps Script Proxy</strong><br>
-          Because this app runs in a browser, direct Sheets API calls require OAuth. Instead, deploy a lightweight <strong>Google Apps Script Web App</strong> per department that acts as a read/write proxy — no OAuth popup needed for read operations, and write operations (promotions only) go through it too.<br><br>
-          <strong>Deploy steps:</strong> Open Google Sheets → Extensions → Apps Script → paste the proxy script → Deploy as Web App → set "Anyone" access → copy the URL below.
+          <strong style="color:#34a853;">SETUP — Google Sheets API via Supabase</strong><br>
+          This system uses a <strong>Google Cloud Service Account</strong> to read and write sheets directly — no Apps Script needed. Just paste the Google Sheet URL or Sheet ID for each department, make sure the sheet is shared with <strong style="color:#34a853;">fudt-sync@fudt-roster-sync.iam.gserviceaccount.com</strong>, and hit Save.
         </div>
 
         <div style="margin-bottom:1.5rem;">
@@ -556,8 +555,9 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
               </select>
             </div>
           </div>
-          <div class="fg"><label class="fl">Google Apps Script Web App URL</label>
-            <input class="fi" id="gsScriptUrl" placeholder="https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec" style="font-size:11px;">
+          <div class="fg"><label class="fl">Google Sheet URL or Sheet ID</label>
+            <input class="fi" id="gsScriptUrl" placeholder="https://docs.google.com/spreadsheets/d/SHEET_ID/edit  —or—  just the ID" style="font-size:11px;">
+            <div style="font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:4px;">Sheet must be shared with: <strong style="color:#34a853;">fudt-sync@fudt-roster-sync.iam.gserviceaccount.com</strong></div>
           </div>
           <div class="fg"><label class="fl">Tab / Sheet Name (exact, case-sensitive)</label>
             <input class="fi" id="gsTabName" placeholder="e.g. SAHP Roster">
@@ -582,15 +582,6 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
           <div class="fmsg" id="gsMappingMsg"></div>
         </div>
 
-        <div style="background:var(--bg3);border:1px solid var(--border);padding:1.25rem;margin-top:1.25rem;">
-          <div style="font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--text2);text-transform:uppercase;margin-bottom:.75rem;">📋 GOOGLE APPS SCRIPT PROXY TEMPLATE</div>
-          <div style="font-family:var(--mono);font-size:9px;color:var(--text3);line-height:2;margin-bottom:.75rem;">
-            Deploy this script in each department's Google Sheet → Extensions → Apps Script → paste → Deploy as Web App (Anyone).
-          </div>
-          <textarea class="fta" style="font-size:10px;min-height:180px;color:var(--gold);margin-bottom:.75rem;" readonly id="gasTemplate"></textarea>
-          <button class="fbtn" style="margin:0;padding:6px 14px;font-size:10px;" onclick="copyGAS()">📋 COPY SCRIPT</button>
-          <div class="fmsg" id="gasMsg"></div>
-        </div>
       </div>
 
       <!-- ═══ SYNC LOG PANEL ═══ -->
@@ -838,6 +829,9 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
 <div class="sync-bar" id="syncBar">
   <div class="sync-dot syncing" id="syncDot"></div>
   <span id="syncMsg">CONNECTING...</span>
+  <span id="syncCountdown" style="margin-left:.75rem;color:var(--text3);"></span>
+  <span style="flex:1;"></span>
+  <button id="btnSyncNow" onclick="adminForceSyncNow()" style="display:none;font-family:var(--mono);font-size:9px;letter-spacing:1px;padding:2px 10px;border:1px solid var(--accent-dim);background:transparent;color:var(--accent);cursor:pointer;text-transform:uppercase;">▶ SYNC NOW</button>
 </div>
 <div class="toast-area" id="toastArea"></div>
 
@@ -1374,7 +1368,13 @@ function setupTopbar(){
   document.getElementById('tbUser').style.display='';
   const rb=document.getElementById('tbRole');
   rb.style.display='';
-  if(CU.role==='admin'){ rb.className='tb-role role-a'; rb.textContent='⚡ ADMIN'; document.getElementById('btnAdm').style.display=''; document.getElementById('btnHC').style.display='none'; }
+  if(CU.role==='admin'){
+    rb.className='tb-role role-a'; rb.textContent='⚡ ADMIN';
+    document.getElementById('btnAdm').style.display='';
+    document.getElementById('btnHC').style.display='';
+    const syncBtn = document.getElementById('btnSyncNow');
+    if(syncBtn) syncBtn.style.display='';
+  }
   else if(CU.role==='hc'){ rb.className='tb-role role-h'; rb.textContent='⭐ HIGH COMMAND'; document.getElementById('btnHC').style.display=''; document.getElementById('btnAdm').style.display='none'; }
   else { rb.className='tb-role role-m'; rb.textContent='MEMBER'; document.getElementById('btnAdm').style.display='none'; document.getElementById('btnHC').style.display='none'; }
   document.getElementById('btnReq').style.display='';
@@ -1518,16 +1518,20 @@ async function quickStatus(id, val){
   const m=S.members.find(x=>x.id===id);
   if(m){
     m.status=val;
-    discordPostStatusChange(m, val); // fire-and-forget
+    discordPostStatusChange(m, val); // fire-and-forget Discord
+    gsUpdateMemberInSheets(m, { status: val }); // fire-and-forget sheet update
   }
   buildSidebar();
 }
 
 async function delMember(id){
   if(!confirm('Remove this personnel record?')) return;
+  const m = S.members.find(x=>x.id===id);
   await dbDelete('fudt_members', id);
   S.members=S.members.filter(m=>m.id!==id);
+  if(m) gsRemoveMemberFromSheets(m); // fire-and-forget sheet update
   renderAll();
+  if(m) toast(m.name+' removed from roster','ok',3000);
 }
 
 function statusBadge(s){
@@ -1660,7 +1664,31 @@ async function resolveReq(table, id, status){
   const r=list.find(x=>x.id===id);
   if(r){
     r.status=status;
-    discordPostRequestResolved(table, r, status); // fire-and-forget
+    discordPostRequestResolved(table, r, status); // fire-and-forget Discord
+
+    // If LOA approved → update status in sheets
+    if(table==='loas' && status==='approved'){
+      const m = S.members.find(x=>x.name===r.name||(r.badge&&x.badge===r.badge));
+      if(m){
+        m.status='loa';
+        await dbUpdate('fudt_members', m.id, {status:'loa', updated_at: new Date().toISOString()});
+        gsUpdateMemberInSheets(m, { status:'LOA', loa:'TRUE' }); // fire-and-forget
+      }
+    }
+    // If LOA denied or ended → restore active
+    if(table==='loas' && status==='denied'){
+      const m = S.members.find(x=>x.name===r.name||(r.badge&&x.badge===r.badge));
+      if(m) gsUpdateMemberInSheets(m, { status: m.status }); // fire-and-forget
+    }
+    // Movement approved → update dept/rank in sheets
+    if(table==='movs' && status==='approved'){
+      const m = S.members.find(x=>x.name===r.name||(r.badge&&x.badge===r.badge));
+      if(m){
+        const changes = {};
+        if(r.rankTo && r.rankTo !== m.rank) changes.rank = r.rankTo;
+        if(Object.keys(changes).length) gsUpdateMemberInSheets(m, changes); // fire-and-forget
+      }
+    }
   }
   if(table==='loas'){ renderMyLoas(); renderAdminReqs(); renderHCReqs(); }
   else { renderMyMovs(); renderAdminReqs(); renderHCReqs(); }
@@ -2105,7 +2133,7 @@ async function denyPending(pid){
 //  HC PANEL
 // ════════════════════════════════════════════════════════
 function openHC(){
-  if(CU?.role!=='hc') return;
+  if(CU?.role!=='hc' && CU?.role!=='admin') return;
   const dept=S.depts.find(d=>d.id===CU.deptId);
   document.getElementById('hcDeptInfo').innerHTML=`<strong>Your Department:</strong> ${dept?.name||'Unknown'} (${dept?.abbr||'—'})<br>You can add/edit members and approve requests for your department.`;
   const rs=document.getElementById('hMemRank');
@@ -2373,38 +2401,59 @@ function gsLog(level, msg, dept=''){
   saveGSLog();
 }
 
-// ── Apps Script proxy fetch ──
-// Your GAS web app must return JSON: { headers: [...], rows: [[...]] }
-// For writes it accepts POST with { action:'write', row:N, col:'Header', value:'...' }
-async function gsFetch(url, tab, headerRow=1){
-  const endpoint = `${url}?tab=${encodeURIComponent(tab)}&headerRow=${headerRow}&_=${Date.now()}`;
-  const res = await fetch(endpoint);
-  if(!res.ok) throw new Error(`HTTP ${res.status}`);
+// ── Supabase Edge Function endpoint ──
+const EDGE_URL = 'https://usoibvfenklsidyzsuty.supabase.co/functions/v1/sheets-proxy';
+const EDGE_HEADERS = {
+  'Content-Type': 'application/json',
+  'Authorization': `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVzb2lidmZlbmtsc2lkeXpzdXR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgyOTU5NTAsImV4cCI6MjA5Mzg3MTk1MH0.CSpQZKG20pXs92rmespKUH5lEDJa5rA8ywI23dwk1tM`
+};
+
+// ── Extract sheet ID from full URL or bare ID ──
+function extractSheetId(input){
+  const m = input.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
+  return m ? m[1] : input.trim();
+}
+
+// ── Read sheet via Edge Function ──
+async function gsFetch(urlOrId, tab, headerRow=1){
+  const sheetId = extractSheetId(urlOrId);
+  const res = await fetch(EDGE_URL, {
+    method: 'POST',
+    headers: EDGE_HEADERS,
+    body: JSON.stringify({ action:'read', sheetId, tab, headerRow })
+  });
+  if(!res.ok) throw new Error(`Edge Function HTTP ${res.status}`);
   const data = await res.json();
   if(data.error) throw new Error(data.error);
   return data; // { headers:[], rows:[[]] }
 }
 
-async function gsWrite(url, tab, rowIndex, colHeader, value){
-  const res = await fetch(url, {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ action:'write', tab, row: rowIndex, col: colHeader, value })
+// ── Write a single cell via Edge Function ──
+async function gsWrite(urlOrId, tab, rowIndex, colHeader, value){
+  const sheetId = extractSheetId(urlOrId);
+  const res = await fetch(EDGE_URL, {
+    method: 'POST',
+    headers: EDGE_HEADERS,
+    body: JSON.stringify({ action:'write', sheetId, tab, rowIndex, colHeader, value })
   });
-  if(!res.ok) throw new Error(`Write HTTP ${res.status}`);
-  return await res.json();
+  if(!res.ok) throw new Error(`Edge Function Write HTTP ${res.status}`);
+  const data = await res.json();
+  if(data.error) throw new Error(data.error);
+  return data;
 }
 
-// ── Append a new row to a sheet ──
-// rowData = { 'Column Header': value, ... }
-async function gsAppendRow(url, tab, rowData){
-  const res = await fetch(url, {
-    method:'POST',
-    headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ action:'append', tab, rowData })
+// ── Append a new row via Edge Function ──
+async function gsAppendRow(urlOrId, tab, rowData){
+  const sheetId = extractSheetId(urlOrId);
+  const res = await fetch(EDGE_URL, {
+    method: 'POST',
+    headers: EDGE_HEADERS,
+    body: JSON.stringify({ action:'append', sheetId, tab, rowData })
   });
-  if(!res.ok) throw new Error(`Append HTTP ${res.status}`);
-  return await res.json();
+  if(!res.ok) throw new Error(`Edge Function Append HTTP ${res.status}`);
+  const data = await res.json();
+  if(data.error) throw new Error(data.error);
+  return data;
 }
 
 // ── Field detection: find column index by trying aliases ──
@@ -2602,7 +2651,105 @@ async function runGlobalSync(){
   toast(`Sync complete — ${totalNew} new, ${totalUpdated} updated, ${totalConflicts} conflicts`, totalErrors?'err':'ok', 5000);
 }
 
-// ── Promotion write-back to sheet ──
+// ── Find a member's row index in a sheet ──
+async function gsFindMemberRow(url, tab, headerRow, memberName, memberBadge, deptId){
+  const data = await gsFetch(url, tab, headerRow||1);
+  const mapping = GS_MAPPINGS[deptId]||{};
+  const headers = data.headers||[];
+  const rows = data.rows||[];
+  const nameCol  = detectColumn(headers, 'name',  mapping);
+  const badgeCol = detectColumn(headers, 'badge', mapping);
+  const rowIdx = rows.findIndex(r => {
+    const rowName  = (r[nameCol] ||'').toString().toLowerCase().trim();
+    const rowBadge = (r[badgeCol]||'').toString().toLowerCase().trim();
+    const matchName  = nameCol  >= 0 && rowName  === memberName.toLowerCase().trim();
+    const matchBadge = badgeCol >= 0 && memberBadge && rowBadge === memberBadge.toLowerCase().trim();
+    return matchName || matchBadge;
+  });
+  return { rowIdx, headers, rows, data };
+}
+
+// ── Update changed fields for a member across all their sheets ──
+async function gsUpdateMemberInSheets(member, changedFields){
+  loadGSData();
+  const deptId = member.dept;
+  const sheetEntries = Object.entries(GS_CONFIGS).filter(([did, cfg]) =>
+    did === deptId || cfg.role === 'empdb' || cfg.role === 'main'
+  );
+  if(!sheetEntries.length) return;
+
+  for(const [cfgDeptId, cfg] of sheetEntries){
+    try{
+      const mapping = GS_MAPPINGS[cfgDeptId]||{};
+      const { rowIdx, headers } = await gsFindMemberRow(
+        cfg.url, cfg.tab, cfg.headerRow, member.name, member.badge, cfgDeptId
+      );
+      if(rowIdx < 0){
+        gsLog('warn', `Update: ${member.name} not found in sheet "${cfg.tab}"`, deptId);
+        continue;
+      }
+      const sheetRowNum = rowIdx + (cfg.headerRow||1) + 1;
+
+      for(const [fieldKey, newVal] of Object.entries(changedFields)){
+        // Main roster is blocked for certain fields
+        if(cfg.role === 'main' && MAIN_ROSTER_BLOCKED.includes(fieldKey)) continue;
+        const f = GS_FIELDS.find(x => x.key === fieldKey);
+        if(!f) continue;
+        const colName = mapping[fieldKey] || f.label;
+        const colIdx = headers.findIndex(h => (h||'').toLowerCase().trim() === colName.toLowerCase().trim());
+        if(colIdx < 0) continue;
+        await gsWrite(cfg.url, cfg.tab, sheetRowNum, headers[colIdx], newVal);
+      }
+      gsLog('ok', `Updated ${member.name} in sheet "${cfg.tab}" — fields: ${Object.keys(changedFields).join(', ')}`, deptId);
+    } catch(e){
+      gsLog('err', `Failed to update ${member.name} in sheet "${cfg.tab}": ${e.message}`, deptId);
+    }
+  }
+}
+
+// ── Mark a member as removed/vacant in all their sheets ──
+async function gsRemoveMemberFromSheets(member){
+  loadGSData();
+  const deptId = member.dept;
+  const sheetEntries = Object.entries(GS_CONFIGS).filter(([did, cfg]) =>
+    did === deptId || cfg.role === 'empdb' || cfg.role === 'main'
+  );
+  if(!sheetEntries.length) return;
+
+  for(const [cfgDeptId, cfg] of sheetEntries){
+    try{
+      const mapping = GS_MAPPINGS[cfgDeptId]||{};
+      const { rowIdx, headers } = await gsFindMemberRow(
+        cfg.url, cfg.tab, cfg.headerRow, member.name, member.badge, cfgDeptId
+      );
+      if(rowIdx < 0){
+        gsLog('warn', `Remove: ${member.name} not found in sheet "${cfg.tab}"`, deptId);
+        continue;
+      }
+      const sheetRowNum = rowIdx + (cfg.headerRow||1) + 1;
+
+      // Write "Resigned" to status column and clear name on dept/empdb sheets
+      // On main roster, just blank the name fields to make it vacant
+      const statusColName = mapping['status'] || 'Status';
+      const statusColIdx = headers.findIndex(h=>(h||'').toLowerCase().trim()===statusColName.toLowerCase().trim());
+      if(statusColIdx >= 0){
+        await gsWrite(cfg.url, cfg.tab, sheetRowNum, headers[statusColIdx], 'Resigned');
+      }
+      // Clear name so the slot shows as vacant on the main roster
+      if(cfg.role === 'main'){
+        const nameColName = mapping['name'] || 'Names';
+        const nameColIdx = headers.findIndex(h=>(h||'').toLowerCase().trim()===nameColName.toLowerCase().trim());
+        if(nameColIdx >= 0) await gsWrite(cfg.url, cfg.tab, sheetRowNum, headers[nameColIdx], '');
+        const discordColName = mapping['discord'] || 'Discord ID';
+        const discordColIdx = headers.findIndex(h=>(h||'').toLowerCase().trim()===discordColName.toLowerCase().trim());
+        if(discordColIdx >= 0) await gsWrite(cfg.url, cfg.tab, sheetRowNum, headers[discordColIdx], '');
+      }
+      gsLog('ok', `Marked ${member.name} as Resigned in sheet "${cfg.tab}"`, deptId);
+    } catch(e){
+      gsLog('err', `Failed to remove ${member.name} from sheet "${cfg.tab}": ${e.message}`, deptId);
+    }
+  }
+}
 async function gsSyncPromotion(deptId, memberName, badgeVal, newRank){
   const cfg = GS_CONFIGS[deptId];
   if(!cfg || !cfg.url) return;
@@ -2679,37 +2826,39 @@ function resolveAllKeepDb(){
 
 // ── UI: sheet config save/test ──
 function gsSaveSheet(){
-  const deptId   = v('gsDeptSel');
-  const scriptUrl= v('gsScriptUrl').trim().replace(/\/$/, '');
-  const tab      = v('gsTabName').trim();
-  const headerRow= parseInt(v('gsHeaderRow'))||1;
-  const role     = v('gsSheetRole');
-  const msg      = document.getElementById('gsSheetMsg');
-  if(!deptId||!scriptUrl||!tab){ showMsg(msg,'err','⚠ Department, script URL and tab name are all required.'); return; }
-  if(!scriptUrl.includes('script.google.com')){ showMsg(msg,'err','⚠ Must be a Google Apps Script URL.'); return; }
-  GS_CONFIGS[deptId] = { url:scriptUrl, tab, headerRow, role };
+  const deptId    = v('gsDeptSel');
+  const rawInput  = v('gsScriptUrl').trim();
+  const tab       = v('gsTabName').trim();
+  const headerRow = parseInt(v('gsHeaderRow'))||1;
+  const role      = v('gsSheetRole');
+  const msg       = document.getElementById('gsSheetMsg');
+  if(!deptId||!rawInput||!tab){ showMsg(msg,'err','⚠ Department, Sheet URL/ID and tab name are all required.'); return; }
+  const sheetId = extractSheetId(rawInput);
+  if(!sheetId){ showMsg(msg,'err','⚠ Could not extract a valid Sheet ID from the URL.'); return; }
+  // Store sheetId as url for backward compat with all cfg.url references
+  GS_CONFIGS[deptId] = { url: sheetId, tab, headerRow, role, sheetId };
   saveGSConfigs();
   renderGSSheetList();
   renderGSFieldMapper(deptId);
-  showMsg(msg,'ok','✓ Sheet configuration saved.');
-  gsLog('info',`Sheet config saved for dept ${deptId}  (${tab})`,deptId);
+  showMsg(msg,'ok',`✓ Sheet configured — ID: ${sheetId}`);
+  gsLog('info',`Sheet config saved for dept ${deptId} — sheetId: ${sheetId} tab: ${tab}`,deptId);
 }
 
 async function gsTestSheet(){
   const deptId    = v('gsDeptSel');
-  const scriptUrl = v('gsScriptUrl').trim().replace(/\/$/, '');
+  const rawInput  = v('gsScriptUrl').trim();
   const tab       = v('gsTabName').trim();
   const headerRow = parseInt(v('gsHeaderRow'))||1;
   const msg       = document.getElementById('gsSheetMsg');
-  if(!scriptUrl||!tab){ showMsg(msg,'err','⚠ Enter URL and tab name first.'); return; }
-  showMsg(msg,'ok','Testing connection...');
+  if(!rawInput||!tab){ showMsg(msg,'err','⚠ Enter Sheet URL/ID and tab name first.'); return; }
+  const sheetId = extractSheetId(rawInput);
+  showMsg(msg,'ok',`Testing connection to sheet ${sheetId}...`);
   try{
-    const data = await gsFetch(scriptUrl, tab, headerRow);
+    const data = await gsFetch(sheetId, tab, headerRow);
     const rowCount = (data.rows||[]).length;
     const cols = (data.headers||[]).filter(Boolean).length;
     showMsg(msg,'ok',`✓ Connected! ${cols} columns, ${rowCount} data rows detected.`);
-    gsLog('ok',`Sheet test OK: ${cols} cols, ${rowCount} rows for ${tab}`,deptId);
-    // Auto-render field mapper
+    gsLog('ok',`Sheet test OK: ${cols} cols, ${rowCount} rows — ${tab}`,deptId);
     renderGSFieldMapper(deptId, data.headers||[]);
   } catch(e){
     showMsg(msg,'err',`⚠ Failed: ${e.message}`);
@@ -2746,7 +2895,7 @@ function renderGSSheetList(){
         <div>
           <div class="list-row-name">${d.name}</div>
           <div class="list-row-sub">${roleLabel} · Tab: "${cfg.tab}" · Header row ${cfg.headerRow||1}</div>
-          <div style="font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:2px;word-break:break-all;">${cfg.url.slice(0,60)}…</div>
+          <div style="font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:2px;">Sheet ID: ${cfg.sheetId||cfg.url}</div>
         </div>
       </div>
       <div class="list-row-acts">
@@ -2761,7 +2910,7 @@ function renderGSSheetList(){
 function gsEditSheet(deptId){
   const cfg = GS_CONFIGS[deptId]; if(!cfg) return;
   document.getElementById('gsDeptSel').value      = deptId;
-  document.getElementById('gsScriptUrl').value    = cfg.url;
+  document.getElementById('gsScriptUrl').value    = cfg.sheetId || cfg.url;
   document.getElementById('gsTabName').value      = cfg.tab;
   document.getElementById('gsHeaderRow').value    = cfg.headerRow||1;
   document.getElementById('gsSheetRole').value    = cfg.role||'dept';
@@ -2989,18 +3138,48 @@ function copyGAS(){
 
 // Auto-sync every 5 minutes if sheets are configured
 let _autoSyncTimer = null;
+let _nextSyncAt = null;
+let _syncCountdownTimer = null;
+
 function startAutoSync(){
   if(_autoSyncTimer) clearInterval(_autoSyncTimer);
-  _autoSyncTimer = setInterval(()=>{
+  if(_syncCountdownTimer) clearInterval(_syncCountdownTimer);
+
+  const INTERVAL = 30 * 60 * 1000; // 30 minutes
+
+  function doAutoSync(){
     loadGSData();
-    if(Object.keys(GS_CONFIGS).length > 0 && CU?.role==='admin'){
-      runGlobalSync();
+    if(Object.keys(GS_CONFIGS).length > 0){
+      runGlobalSync(); // all roles get passive auto-sync
     }
-  }, 5 * 60 * 1000); // 5 min
+    _nextSyncAt = Date.now() + INTERVAL;
+  }
+
+  // First sync 30 min from now
+  _nextSyncAt = Date.now() + INTERVAL;
+  _autoSyncTimer = setInterval(doAutoSync, INTERVAL);
+
+  // Countdown ticker — updates the sync status bar every second
+  _syncCountdownTimer = setInterval(()=>{
+    if(!_nextSyncAt) return;
+    const msLeft = _nextSyncAt - Date.now();
+    if(msLeft <= 0) return;
+    const mins = Math.floor(msLeft / 60000);
+    const secs = Math.floor((msLeft % 60000) / 1000);
+    const el = document.getElementById('syncCountdown');
+    if(el) el.textContent = `Next sync in ${mins}m ${secs}s`;
+  }, 1000);
 }
 
-// ════════════════════════════════════════════════════════
-//  HELPERS
+// Admin-only instant sync — resets the 30min countdown
+async function adminForceSyncNow(){
+  if(CU?.role !== 'admin'){ toast('Only admins can force sync.','err',3000); return; }
+  if(_autoSyncTimer) clearInterval(_autoSyncTimer);
+  await runGlobalSync();
+  // Restart the 30min clock
+  startAutoSync();
+  toast('Manual sync complete — 30min clock reset','ok',4000);
+}
 // ════════════════════════════════════════════════════════
 function v(id){ const el=document.getElementById(id); return el?el.value:''; }
 function uid(){ return Math.random().toString(36).slice(2,9)+Date.now().toString(36); }
