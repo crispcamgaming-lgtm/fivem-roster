@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FiveM Universal — Department Toolkit</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Share+Tech+Mono&family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@400;600;700&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
 :root{
   --bg:#07090f;--bg2:#0b0e17;--bg3:#0f1320;--surface:#111829;--surface2:#151e30;
@@ -257,14 +258,6 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
   .dept-hdr{flex-direction:column;gap:1rem;}
   .dept-nums{justify-content:flex-start;}
 }
-  .layout{grid-template-columns:1fr;}
-  .sidebar{position:static;height:auto;border-right:none;border-bottom:1px solid var(--border);}
-  .dept-name{font-size:32px;}
-  .frow,.frow3{grid-template-columns:1fr;}
-  .welcome{flex-direction:column;gap:1rem;text-align:center;}
-  .dept-hdr{flex-direction:column;gap:1rem;}
-  .dept-nums{justify-content:flex-start;}
-}
 </style>
 </head>
 <body>
@@ -457,16 +450,35 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
       <!-- GOOGLE SHEETS -->
       <div class="mpanel" id="ap-sheets">
         <div class="infobox">
-          <strong>HOW TO CONNECT YOUR GOOGLE SHEET:</strong><br>
-          1. Create a Google Sheet — columns must be in this order:<br>
-          &nbsp;&nbsp;&nbsp;A: Name | B: Badge | C: Department | D: Rank | E: JoinDate | F: Status<br>
-          2. Status values: <strong>active</strong> / <strong>needs</strong> / <strong>inactive</strong> / <strong>loa</strong><br>
-          3. Department column must exactly match your dept name OR abbreviation<br>
-          4. Click File → Share → Publish to web → Sheet1 → CSV → Publish<br>
-          5. Copy the URL it gives you and paste it below<br>
-          6. Click Save &amp; Sync — the roster will import automatically
+          <strong>GOOGLE SHEETS INTEGRATION</strong><br>
+          Sign in with the Google account that owns your roster sheet.<br>
+          After connecting, paste your <strong>Spreadsheet ID</strong> (from the URL) and click <strong>Import</strong>.<br><br>
+          Sheet columns must be in order:<br>
+          &nbsp;&nbsp;A: Name &nbsp;|&nbsp; B: Badge &nbsp;|&nbsp; C: Department &nbsp;|&nbsp; D: Rank &nbsp;|&nbsp; E: Join Date &nbsp;|&nbsp; F: Status<br>
+          Status values: <strong>active</strong> / <strong>needs</strong> / <strong>inactive</strong> / <strong>loa</strong>
         </div>
-        <div class="fg"><label class="fl">Published CSV URL</label><input class="fi" id="aSheetsUrl" placeholder="https://docs.google.com/spreadsheets/d/e/.../pub?output=csv"></div>
+
+        <!-- Step 1: Google Sign-In -->
+        <div class="fg" id="gAuthRow">
+          <label class="fl">Step 1 — Connect Google Account</label>
+          <div id="gSignInBtn" style="margin-top:6px;"></div>
+          <div id="gSignedInAs" style="display:none;font-family:var(--mono);font-size:10px;color:var(--green);margin-top:6px;letter-spacing:1px;"></div>
+        </div>
+
+        <!-- Step 2: Sheet ID -->
+        <div class="fg">
+          <label class="fl">Step 2 — Spreadsheet ID</label>
+          <input class="fi" id="aSheetId" placeholder="e.g. 1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms">
+          <div style="font-family:var(--mono);font-size:9px;color:var(--text3);margin-top:4px;letter-spacing:1px;">
+            Find it in the sheet URL: docs.google.com/spreadsheets/d/<strong style="color:var(--text2);">THIS_PART</strong>/edit
+          </div>
+        </div>
+
+        <div class="fg">
+          <label class="fl">Sheet / Tab Name (default: Sheet1)</label>
+          <input class="fi" id="aSheetTab" placeholder="Sheet1" value="Sheet1">
+        </div>
+
         <div class="fg"><label class="fl">Auto-Refresh</label>
           <select class="fs" id="aRefresh">
             <option value="0">Manual only</option>
@@ -476,8 +488,15 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
             <option value="1800">Every 30 minutes</option>
           </select>
         </div>
-        <div class="fg"><label class="fl">Logo Image URL (paste a direct image link)</label><input class="fi" id="aLogoUrl" placeholder="https://i.imgur.com/yourlogo.png"></div>
-        <button class="fbtn" style="width:100%;" onclick="saveSheetCfg()">SAVE &amp; SYNC NOW</button>
+
+        <div class="fg"><label class="fl">Logo Image URL (optional)</label>
+          <input class="fi" id="aLogoUrl" placeholder="https://i.imgur.com/yourlogo.png">
+        </div>
+
+        <div style="display:flex;gap:.75rem;flex-wrap:wrap;">
+          <button class="fbtn" onclick="gSheetsImport()">▶ IMPORT FROM SHEET</button>
+          <button class="fbtn" style="background:var(--green-dim);border-color:var(--green);color:var(--green);" onclick="gSheetsExport()">↑ EXPORT ROSTER TO SHEET</button>
+        </div>
         <div id="aSheetMsg" style="margin-top:1rem;font-family:var(--mono);font-size:10px;letter-spacing:1px;"></div>
       </div>
     </div>
@@ -680,25 +699,16 @@ body::after{content:'';position:fixed;inset:0;background:repeating-linear-gradie
 
 <script>
 // ════════════════════════════════════════════════════════
-//  SHARED STORAGE KEYS
+//  FIREBASE CONFIG — free Realtime Database, true live sync
+//  One shared DB for all users of this toolkit.
 // ════════════════════════════════════════════════════════
-const SK = {
-  depts:   'fudt_depts',
-  ranks:   'fudt_ranks',
-  members: 'fudt_members',
-  users:   'fudt_users',
-  pending: 'fudt_pending',
-  loas:    'fudt_loas',
-  movs:    'fudt_movs',
-  logo:    'fudt_logo',
-  sheetsUrl:'fudt_sheetsUrl',
-};
+const FB_URL = 'https://fudt-toolkit-default-rtdb.firebaseio.com';
 
 const ADMIN_PASS = 'ngisontop';
 let CU = null;
 let AD = null;
 let CC = '#3a7bd5';
-let POLL_TIMER = null;
+let FB_LISTENERS = []; // SSE connections for live updates
 
 const S = {
   depts:[], ranks:{}, members:[], users:[], pending:[],
@@ -706,7 +716,7 @@ const S = {
 };
 
 // ════════════════════════════════════════════════════════
-//  SHARED STORAGE I/O
+//  FIREBASE REST + SSE LAYER
 // ════════════════════════════════════════════════════════
 function setSyncStatus(state, msg){
   const dot = document.getElementById('syncDot');
@@ -715,69 +725,121 @@ function setSyncStatus(state, msg){
   m.textContent = msg;
 }
 
-async function storageGet(key){
+async function fbGet(path){
   try{
-    const r = await window.storage.get(key, true);
-    return r ? JSON.parse(r.value) : null;
+    const r = await fetch(`${FB_URL}/${path}.json`);
+    if(!r.ok) throw new Error(r.status);
+    return await r.json();
   } catch(e){ return null; }
 }
 
-async function storageSet(key, val){
+async function fbSet(path, val){
   try{
-    await window.storage.set(key, JSON.stringify(val), true);
-    return true;
+    const r = await fetch(`${FB_URL}/${path}.json`, {
+      method:'PUT', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(val)
+    });
+    return r.ok;
   } catch(e){ return false; }
 }
 
 async function loadAll(){
-  setSyncStatus('syncing','SYNCING...');
-  const keys = Object.keys(SK);
-  await Promise.all(keys.map(async k=>{
-    const v = await storageGet(SK[k]);
-    if(v !== null) S[k] = v;
-  }));
-  setSyncStatus('ok','CONNECTED · Live shared data');
-}
-
-async function saveKey(k){
-  setSyncStatus('syncing','SAVING...');
-  const ok = await storageSet(SK[k], S[k]);
-  setSyncStatus(ok?'ok':'err', ok?'CONNECTED · Live shared data':'SAVE ERROR — check connection');
-}
-
-async function saveAll(){
-  setSyncStatus('syncing','SAVING...');
-  const results = await Promise.all(Object.keys(SK).map(k=>storageSet(SK[k],S[k])));
-  const ok = results.every(Boolean);
-  setSyncStatus(ok?'ok':'err', ok?'CONNECTED · Live shared data':'SAVE ERROR — check connection');
+  setSyncStatus('syncing','CONNECTING...');
+  const data = await fbGet('fudt');
+  if(data){
+    if(data.depts)    S.depts    = data.depts;
+    if(data.ranks)    S.ranks    = data.ranks;
+    if(data.members)  S.members  = data.members;
+    if(data.users)    S.users    = data.users;
+    if(data.pending)  S.pending  = Array.isArray(data.pending)?data.pending:Object.values(data.pending||{});
+    if(data.loas)     S.loas     = Array.isArray(data.loas)?data.loas:Object.values(data.loas||{});
+    if(data.movs)     S.movs     = Array.isArray(data.movs)?data.movs:Object.values(data.movs||{});
+    if(typeof data.logo==='string') S.logo = data.logo;
+    if(typeof data.sheetsUrl==='string') S.sheetsUrl = data.sheetsUrl;
+  }
+  setSyncStatus('ok','LIVE · Firebase synced');
 }
 
 async function save(keys){
-  if(!keys) return saveAll();
-  for(const k of keys) await saveKey(k);
+  setSyncStatus('syncing','SAVING...');
+  const toSave = keys || ['depts','ranks','members','users','pending','loas','movs','logo','sheetsUrl'];
+  const obj = {};
+  toSave.forEach(k=>{ obj[k]=S[k]; });
+  // PATCH each key individually so we don't overwrite unrelated keys
+  const results = await Promise.all(toSave.map(k=>fbSet(`fudt/${k}`, S[k])));
+  const ok = results.every(Boolean);
+  setSyncStatus(ok?'ok':'err', ok?'LIVE · Firebase synced':'SAVE ERROR — check connection');
 }
 
-// Live polling — refresh data from shared storage every 8s
-async function pollShared(){
-  if(!CU) return;
-  const prev = {
-    members: JSON.stringify(S.members),
-    loas:    JSON.stringify(S.loas),
-    movs:    JSON.stringify(S.movs),
-    pending: JSON.stringify(S.pending),
-  };
-  await loadAll();
-  const changed = Object.keys(prev).some(k=>prev[k]!==JSON.stringify(S[k]));
-  if(changed){
-    renderAll();
-    if(CU?.role==='admin') renderAdminReqs();
-    if(CU?.role==='hc')    renderHCReqs();
-    updatePendingBadges();
-  }
+// ── Live SSE listener for a single path ──
+function fbListen(path, cb){
+  const es = new EventSource(`${FB_URL}/${path}.json`);
+  es.addEventListener('put', e=>{
+    try{ const d=JSON.parse(e.data); cb(d.data); }catch(_){}
+  });
+  es.onerror = ()=>{ setSyncStatus('err','CONNECTION LOST — retrying...'); };
+  FB_LISTENERS.push(es);
+  return es;
 }
 
-function startPolling(){ POLL_TIMER=setInterval(pollShared,8000); }
-function stopPolling(){ clearInterval(POLL_TIMER); POLL_TIMER=null; }
+function startLiveListeners(){
+  stopLiveListeners();
+  // Listen to each critical path separately for granular updates
+  fbListen('fudt/members', data=>{
+    if(!data) return;
+    const fresh = Array.isArray(data)?data:Object.values(data);
+    if(JSON.stringify(fresh)!==JSON.stringify(S.members)){
+      S.members=fresh; renderAll(); setSyncStatus('ok','LIVE · Firebase synced');
+    }
+  });
+  fbListen('fudt/loas', data=>{
+    if(!data) return;
+    const fresh = Array.isArray(data)?data:Object.values(data);
+    if(JSON.stringify(fresh)!==JSON.stringify(S.loas)){
+      S.loas=fresh; renderMyLoas(); renderAdminReqs(); renderHCReqs(); setSyncStatus('ok','LIVE · Firebase synced');
+    }
+  });
+  fbListen('fudt/movs', data=>{
+    if(!data) return;
+    const fresh = Array.isArray(data)?data:Object.values(data);
+    if(JSON.stringify(fresh)!==JSON.stringify(S.movs)){
+      S.movs=fresh; renderMyMovs(); renderAdminReqs(); renderHCReqs(); setSyncStatus('ok','LIVE · Firebase synced');
+    }
+  });
+  fbListen('fudt/pending', data=>{
+    const fresh = data?(Array.isArray(data)?data:Object.values(data)):[];
+    if(JSON.stringify(fresh)!==JSON.stringify(S.pending)){
+      S.pending=fresh; updatePendingBadges();
+      const apl=document.getElementById('aPendingList');
+      const hpl=document.getElementById('hPendingList');
+      if(apl) renderPendingList('aPendingList',true);
+      if(hpl) renderPendingList('hPendingList',false);
+      setSyncStatus('ok','LIVE · Firebase synced');
+    }
+  });
+  fbListen('fudt/users', data=>{
+    if(!data) return;
+    const fresh = Array.isArray(data)?data:Object.values(data);
+    if(JSON.stringify(fresh)!==JSON.stringify(S.users)){
+      S.users=fresh;
+      const aul=document.getElementById('aUserList');
+      if(aul) renderAUserList();
+      setSyncStatus('ok','LIVE · Firebase synced');
+    }
+  });
+  fbListen('fudt/depts', data=>{
+    if(!data) return;
+    const fresh = Array.isArray(data)?data:Object.values(data);
+    if(JSON.stringify(fresh)!==JSON.stringify(S.depts)){
+      S.depts=fresh; renderAll(); setSyncStatus('ok','LIVE · Firebase synced');
+    }
+  });
+}
+
+function stopLiveListeners(){
+  FB_LISTENERS.forEach(es=>{ try{ es.close(); }catch(_){} });
+  FB_LISTENERS=[];
+}
 
 // ════════════════════════════════════════════════════════
 //  SEED DEMO DATA (only if shared storage is empty)
@@ -815,7 +877,7 @@ async function seed(){
   ];
   S.pending=[];
   S.loas=[]; S.movs=[];
-  await saveAll();
+  await save();
 }
 
 // ════════════════════════════════════════════════════════
@@ -918,14 +980,14 @@ async function doLogin(){
   renderAll();
   populateAllFormDepts();
   if(S.logo) applyLogo(S.logo);
-  startPolling();
+  startLiveListeners();
 }
 
 document.getElementById('loginPass').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
 document.getElementById('loginUser').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
 
 function doSignout(){
-  stopPolling();
+  stopLiveListeners();
   CU=null; AD=null;
   document.getElementById('appWrap').style.display='none';
   document.getElementById('loginOverlay').classList.remove('hidden');
@@ -1480,39 +1542,181 @@ function renderAdminReqs(){
 }
 
 // ════════════════════════════════════════════════════════
-//  GOOGLE SHEETS
+//  GOOGLE SHEETS — OAuth via Google Identity Services
 // ════════════════════════════════════════════════════════
-async function saveSheetCfg(){
-  const url=document.getElementById('aSheetsUrl').value.trim();
-  const logo=document.getElementById('aLogoUrl').value.trim();
-  S.sheetsUrl=url;
-  if(logo){ S.logo=logo; applyLogo(logo); }
-  await saveAll();
-  const msg=document.getElementById('aSheetMsg');
-  if(url){ syncSheets(url,msg); } else { msg.innerHTML='<span style="color:var(--text3)">No URL set — logo saved.</span>'; }
-}
+// You must create a project at console.cloud.google.com,
+// enable Google Sheets API, create an OAuth 2.0 Client ID
+// (Web application), and add your hosted domain to
+// Authorized JavaScript Origins. Paste the client ID below.
+const GAPI_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com';
+const GAPI_SCOPE     = 'https://www.googleapis.com/auth/spreadsheets';
 
-async function syncSheets(url,msgEl){
-  if(msgEl) msgEl.innerHTML='<span class="spinner"></span><span style="color:var(--text3)">SYNCING FROM GOOGLE SHEETS...</span>';
-  try{
-    const res=await fetch(url); if(!res.ok) throw new Error('HTTP '+res.status);
-    const txt=await res.text(); const rows=parseCSV(txt);
-    if(rows.length<2) throw new Error('Sheet appears empty');
-    const imported=[];
-    for(let i=1;i<rows.length;i++){
-      const [name,badge,deptName,rank,date,status]=rows[i]; if(!name?.trim()) continue;
-      const dept=S.depts.find(d=>d.name.toLowerCase()===(deptName||'').trim().toLowerCase()||d.abbr.toLowerCase()===(deptName||'').trim().toLowerCase());
-      if(!dept) continue;
-      const st=['active','needs','inactive','loa'].includes((status||'').trim().toLowerCase())?(status||'active').trim().toLowerCase():'active';
-      imported.push({id:'gs'+i,name:name.trim(),badge:(badge||'').trim(),dept:dept.id,rank:(rank||'').trim(),date:(date||'').trim(),status:st,discord:''});
+let G_ACCESS_TOKEN = null;
+let G_TOKEN_CLIENT = null;
+let G_REFRESH_TIMER = null;
+
+function initGoogleAuth(){
+  if(!window.google?.accounts?.oauth2) return;
+  G_TOKEN_CLIENT = google.accounts.oauth2.initTokenClient({
+    client_id: GAPI_CLIENT_ID,
+    scope: GAPI_SCOPE,
+    callback: (resp)=>{
+      if(resp.error){ gSheetMsg('err','Google sign-in failed: '+resp.error); return; }
+      G_ACCESS_TOKEN = resp.access_token;
+      // Fetch user email to show "Signed in as"
+      fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers:{Authorization:'Bearer '+G_ACCESS_TOKEN}
+      }).then(r=>r.json()).then(u=>{
+        document.getElementById('gSignedInAs').style.display='';
+        document.getElementById('gSignedInAs').textContent='✓ Signed in as '+u.email;
+        document.getElementById('gSignInBtn').style.display='none';
+      });
     }
-    S.members=S.members.filter(m=>!m.id.startsWith('gs')); S.members.push(...imported);
-    await save(['members']); renderAll();
-    if(msgEl) msgEl.innerHTML=`<span style="color:var(--green)">✓ SYNC COMPLETE — ${imported.length} records imported.</span>`;
-  } catch(e){
-    if(msgEl) msgEl.innerHTML=`<span style="color:var(--red)">✕ SYNC FAILED: ${e.message}</span>`;
+  });
+
+  // Render the sign-in button
+  google.accounts.id.initialize({ client_id: GAPI_CLIENT_ID, callback: ()=>{} });
+
+  const btn = document.getElementById('gSignInBtn');
+  if(btn){
+    btn.innerHTML = `<button class="fbtn" onclick="requestGToken()">🔗 SIGN IN WITH GOOGLE</button>`;
   }
 }
+
+function requestGToken(){
+  if(!G_TOKEN_CLIENT){
+    gSheetMsg('err','Google services not loaded. Check your Client ID and that your domain is an Authorized JavaScript Origin.');
+    return;
+  }
+  G_TOKEN_CLIENT.requestAccessToken({prompt:'consent'});
+}
+
+function gSheetMsg(type, text){
+  const el = document.getElementById('aSheetMsg');
+  if(!el) return;
+  el.innerHTML = `<span style="color:var(--${type==='ok'?'green':type==='err'?'red':'text3'})">${text}</span>`;
+}
+
+async function gSheetsImport(){
+  const sheetId = document.getElementById('aSheetId')?.value.trim();
+  const tab     = document.getElementById('aSheetTab')?.value.trim()||'Sheet1';
+  const logo    = document.getElementById('aLogoUrl')?.value.trim();
+  if(logo){ S.logo=logo; applyLogo(logo); }
+
+  if(!sheetId){ gSheetMsg('err','⚠ Paste your Spreadsheet ID first.'); return; }
+
+  // If no token yet, try public access first (works if sheet is shared publicly)
+  const useAuth = !!G_ACCESS_TOKEN;
+  const range   = encodeURIComponent(tab+'!A:F');
+  const url     = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}?key=AIzaSyD_placeholder`;
+
+  gSheetMsg('syncing','<span class="spinner"></span> Importing from Google Sheets...');
+
+  try{
+    let rows;
+
+    if(useAuth){
+      // Authenticated — works on private sheets
+      const res = await fetch(
+        `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}`,
+        { headers:{ Authorization:'Bearer '+G_ACCESS_TOKEN } }
+      );
+      if(!res.ok){
+        const err=await res.json();
+        throw new Error(err.error?.message||'HTTP '+res.status);
+      }
+      const data = await res.json();
+      rows = data.values||[];
+    } else {
+      // Unauthenticated — sheet must be shared "Anyone with the link can view"
+      // Use published CSV fallback
+      const csvUrl = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&sheet=${encodeURIComponent(tab)}`;
+      const res = await fetch(csvUrl);
+      if(!res.ok) throw new Error('Could not fetch sheet. Make sure it is shared publicly OR sign in with Google above.');
+      const txt = await res.text();
+      rows = parseCSV(txt);
+    }
+
+    if(rows.length<2) throw new Error('Sheet is empty or has only a header row.');
+
+    const header = useAuth ? null : rows[0]; // CSV has header row; API may not
+    const startRow = 1;
+    const imported=[];
+
+    for(let i=startRow;i<rows.length;i++){
+      const r=rows[i];
+      const [name,badge,deptName,rank,date,status] = useAuth ? r : r;
+      if(!name?.trim()) continue;
+      const dept=S.depts.find(d=>
+        d.name.toLowerCase()===(deptName||'').trim().toLowerCase()||
+        d.abbr.toLowerCase()===(deptName||'').trim().toLowerCase()
+      );
+      if(!dept) continue;
+      const st=['active','needs','inactive','loa'].includes((status||'').trim().toLowerCase())
+        ?(status||'active').trim().toLowerCase():'active';
+      imported.push({id:'gs'+i,name:name.trim(),badge:(badge||'').trim(),
+        dept:dept.id,rank:(rank||'').trim(),date:(date||'').trim(),status:st,discord:''});
+    }
+
+    S.members=S.members.filter(m=>!m.id.startsWith('gs'));
+    S.members.push(...imported);
+    S.sheetsUrl=sheetId; // store sheet ID for re-sync
+    await save(['members','sheetsUrl','logo']);
+    renderAll();
+
+    // Setup auto-refresh
+    const interval = parseInt(document.getElementById('aRefresh')?.value)||0;
+    if(G_REFRESH_TIMER) clearInterval(G_REFRESH_TIMER);
+    if(interval>0) G_REFRESH_TIMER=setInterval(gSheetsImport, interval*1000);
+
+    gSheetMsg('ok',`✓ Imported ${imported.length} records from "${tab}".`
+      +(imported.length===0?' (No rows matched your departments — check department names in col C.)':''));
+
+  } catch(e){
+    gSheetMsg('err','✕ Import failed: '+e.message);
+  }
+}
+
+async function gSheetsExport(){
+  const sheetId = document.getElementById('aSheetId')?.value.trim();
+  const tab     = document.getElementById('aSheetTab')?.value.trim()||'Sheet1';
+  if(!sheetId){ gSheetMsg('err','⚠ Paste your Spreadsheet ID first.'); return; }
+  if(!G_ACCESS_TOKEN){ gSheetMsg('err','⚠ Sign in with Google first to export.'); return; }
+
+  gSheetMsg('syncing','<span class="spinner"></span> Exporting roster to Google Sheets...');
+
+  const header = ['Name','Badge','Department','Rank','Join Date','Status','Discord'];
+  const rows   = [header];
+  S.members.forEach(m=>{
+    const dept=S.depts.find(d=>d.id===m.dept);
+    rows.push([m.name,m.badge,dept?.abbr||'',m.rank,m.date,m.status,m.discord||'']);
+  });
+
+  try{
+    // Clear then write
+    const range = encodeURIComponent(tab+'!A1');
+    await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${range}:clear`,{
+      method:'POST', headers:{Authorization:'Bearer '+G_ACCESS_TOKEN,'Content-Type':'application/json'}
+    });
+
+    const writeRange = encodeURIComponent(tab+'!A1');
+    const res = await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values/${writeRange}?valueInputOption=RAW`,
+      {
+        method:'PUT',
+        headers:{Authorization:'Bearer '+G_ACCESS_TOKEN,'Content-Type':'application/json'},
+        body: JSON.stringify({ range: tab+'!A1', majorDimension:'ROWS', values:rows })
+      }
+    );
+    if(!res.ok){ const e=await res.json(); throw new Error(e.error?.message||'HTTP '+res.status); }
+    gSheetMsg('ok',`✓ Exported ${rows.length-1} members to "${tab}".`);
+  } catch(e){
+    gSheetMsg('err','✕ Export failed: '+e.message);
+  }
+}
+
+// Initialize Google auth once GIS script loads
+window.addEventListener('load',()=>{ setTimeout(initGoogleAuth, 500); });
 
 function parseCSV(txt){
   return txt.trim().split('\n').map(line=>{
