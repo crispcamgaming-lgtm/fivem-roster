@@ -1535,11 +1535,11 @@ body {
             <div class="card-body">
               <div class="frow">
                 <div class="fg"><label class="fl">Your Full Name</label><input class="fi" id="loaName"></div>
-                <div class="fg"><label class="fl">Badge / Employee ID</label><input class="fi" id="loaBadge"></div>
+                <div class="fg"><label class="fl">Badge / Callsign</label><select class="fs" id="loaBadge"><option value="">— select department first —</option></select></div>
               </div>
               <div class="frow">
-                <div class="fg"><label class="fl">Your Department</label><select class="fs" id="loaDept"></select></div>
-                <div class="fg"><label class="fl">Your Current Rank</label><input class="fi" id="loaRank"></div>
+                <div class="fg"><label class="fl">Your Department</label><select class="fs" id="loaDept" onchange="onLoaDeptChange()"></select></div>
+                <div class="fg"><label class="fl">Your Current Rank</label><select class="fs" id="loaRank"><option value="">— select department first —</option></select></div>
               </div>
               <div class="frow">
                 <div class="fg"><label class="fl">LOA Start Date</label><input class="fi" id="loaStart" type="date"></div>
@@ -1572,11 +1572,11 @@ body {
             <div class="card-body">
               <div class="frow">
                 <div class="fg"><label class="fl">Your Full Name</label><input class="fi" id="movName"></div>
-                <div class="fg"><label class="fl">Badge / Employee ID</label><input class="fi" id="movBadge"></div>
+                <div class="fg"><label class="fl">Badge / Callsign</label><select class="fs" id="movBadge"><option value="">— select department first —</option></select></div>
               </div>
               <div class="frow">
-                <div class="fg"><label class="fl">Current Department</label><select class="fs" id="movDeptFrom"></select></div>
-                <div class="fg"><label class="fl">Current Rank</label><input class="fi" id="movRankFrom"></div>
+                <div class="fg"><label class="fl">Current Department</label><select class="fs" id="movDeptFrom" onchange="onMovDeptFromChange()"></select></div>
+                <div class="fg"><label class="fl">Current Rank</label><select class="fs" id="movRankFrom"><option value="">— select dept first —</option></select></div>
               </div>
               <div class="fg"><label class="fl">Movement Type</label>
                 <select class="fs" id="movType" onchange="toggleMovFields()">
@@ -1586,11 +1586,11 @@ body {
                 </select>
               </div>
               <div id="movTransferGroup" class="frow">
-                <div class="fg"><label class="fl">Destination Department</label><select class="fs" id="movDeptTo"></select></div>
-                <div class="fg"><label class="fl">Expected New Rank</label><input class="fi" id="movRankTo"></div>
+                <div class="fg"><label class="fl">Destination Department</label><select class="fs" id="movDeptTo" onchange="loadMemRanks('movDeptTo','movRankTo')"></select></div>
+                <div class="fg"><label class="fl">Expected New Rank</label><select class="fs" id="movRankTo"><option value="">— select dest dept first —</option></select></div>
               </div>
               <div id="movRankGroup" class="frow" style="display:none;">
-                <div class="fg"><label class="fl">New Rank</label><input class="fi" id="movNewRank"></div>
+                <div class="fg"><label class="fl">New Rank</label><select class="fs" id="movNewRank"><option value="">— select dept first —</option></select></div>
                 <div class="fg"><label class="fl">Effective Date</label><input class="fi" id="movEffDate" type="date"></div>
               </div>
               <div class="fg"><label class="fl">Reason / Notes</label><textarea class="fta" id="movReason"></textarea></div>
@@ -1741,8 +1741,8 @@ async function handleChange(type,payload){
 /* ════════════════════════════════════════════════════
    CLOCK / TOAST / STATUS
 ════════════════════════════════════════════════════ */
-function tickClock(){ const n=new Date(),pad=x=>String(x).padStart(2,'0'); document.getElementById('tbClock').textContent=`${pad(n.getUTCHours())}:${pad(n.getUTCMinutes())}:${pad(n.getUTCSeconds())} UTC`; }
-setInterval(tickClock,1000); tickClock();
+function tickClock(){const n=new Date(),pad=x=>String(x).padStart(2,'0');const tz=n.toLocaleTimeString('en-US',{timeZoneName:'short'}).split(' ').pop()||'Local';document.getElementById('tbClock').textContent=`${pad(n.getHours())}:${pad(n.getMinutes())}:${pad(n.getSeconds())} ${tz}`;}
+setInterval(tickClock,1000);tickClock();
 
 function toast(msg,type='info',dur=4000){ const area=document.getElementById('toastArea'); const el=document.createElement('div'); el.className='toast '+type; el.textContent=msg; area.appendChild(el); setTimeout(()=>{ el.style.opacity='0'; el.style.transition='opacity .4s'; setTimeout(()=>el.remove(),400); },dur); }
 function setSyncStatus(state,msg){ const dot=document.getElementById('syncDot'),m=document.getElementById('syncMsg'); dot.className='sync-dot'+(state==='syncing'?' syncing':state==='err'?' error':''); m.textContent=msg; }
@@ -1979,6 +1979,9 @@ function populateAllFormDepts(){
   const acc=accessibleDepts();
   ['loaDept','movDeptFrom','movDeptTo'].forEach(id=>{ const el=document.getElementById(id); if(!el) return; el.innerHTML=acc.map(d=>`<option value="${d.id}">${d.name} (${d.abbr})</option>`).join(''); });
   ['aNewDept','aMemDept'].forEach(id=>{ const el=document.getElementById(id); if(!el) return; el.innerHTML=S.depts.map(d=>`<option value="${d.id}">${d.name} (${d.abbr})</option>`).join(''); });
+  onLoaDeptChange();
+  onMovDeptFromChange();
+  loadMemRanks('movDeptTo','movRankTo');
 }
 
 /* ════════════════════════════════════════════════════
@@ -1989,7 +1992,7 @@ async function submitLOA(){
   if(!name||!badge||!dept||!start||!end||!reason){ showMsg(msg,'err','⚠ Please fill in all required fields.'); return; }
   const row={id:uid(),name,badge,dept,rank,start_date:start,end_date:end,reason,discord,status:'pending',by_user:CU?.username||'guest',ts:Date.now()};
   const ok=await dbUpsert('fudt_loas',row);
-  if(ok){ showMsg(msg,'ok','✓ LOA request submitted.'); ['loaName','loaBadge','loaRank','loaStart','loaEnd','loaReason','loaDiscord'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; }); S.loas.push(loaMap({...row,start_date:row.start_date,end_date:row.end_date,by_user:row.by_user})); renderMyLoas(); }
+  if(ok){ showMsg(msg,'ok','✓ LOA request submitted.'); ['loaName','loaStart','loaEnd','loaReason','loaDiscord'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; }); ['loaBadge','loaRank'].forEach(id=>{ const el=document.getElementById(id); if(el) el.selectedIndex=0; }); S.loas.push(loaMap({...row,start_date:row.start_date,end_date:row.end_date,by_user:row.by_user})); renderMyLoas(); }
   else showMsg(msg,'err','⚠ Failed to submit. Check connection.');
 }
 
@@ -2024,7 +2027,7 @@ async function submitMOV(){
   if(!name||!badge||!deptFrom||!reason){ showMsg(msg,'err','⚠ Please fill in all required fields.'); return; }
   const row={id:uid(),name,badge,dept_from:deptFrom,rank_from:rankFrom,mov_type:type,dept_to:type==='transfer'?deptTo:deptFrom,rank_to:type==='transfer'?rankTo:(type==='promotion'||type==='demotion')?newRank:'',eff_date:effDate,reason,discord,status:'pending',by_user:CU?.username||'guest',ts:Date.now()};
   const ok=await dbUpsert('fudt_movs',row);
-  if(ok){ showMsg(msg,'ok','✓ Movement request submitted.'); ['movName','movBadge','movRankFrom','movRankTo','movNewRank','movEffDate','movReason','movDiscord'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; }); S.movs.push(movMap(row)); renderMyMovs(); }
+  if(ok){ showMsg(msg,'ok','✓ Movement request submitted.'); ['movName','movEffDate','movReason','movDiscord'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; }); ['movBadge','movRankFrom','movRankTo','movNewRank'].forEach(id=>{ const el=document.getElementById(id); if(el) el.selectedIndex=0; }); S.movs.push(movMap(row)); renderMyMovs(); }
   else showMsg(msg,'err','⚠ Failed to submit. Check connection.');
 }
 
@@ -2732,6 +2735,65 @@ function renderHealth(){
   hg.innerHTML=statCards.map(x=>`<div class="stat-card ${x.c}"><span class="stat-icon">📊</span><div class="stat-val">${x.v}</div><div class="stat-label">${x.l}</div></div>`).join('');
   hd.innerHTML=S.depts.map(d=>{ const dm=S.members.filter(m=>m.dept===d.id),cfg=GS_CONFIGS[d.id],pct=dm.length?Math.round(dm.filter(m=>m.status==='active').length/dm.length*100):0,hasMapped=GS_MAPPINGS[d.id]&&Object.keys(GS_MAPPINGS[d.id]).length>0; return `<div class="card" style="margin-bottom:.5rem;"><div class="card-body" style="padding:.875rem 1.25rem;"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;"><span style="font-weight:700;color:${d.color};">${d.name}</span><div style="display:flex;gap:.5rem;"><span style="font-size:10px;font-family:var(--mono);padding:2px 7px;border-radius:4px;background:${cfg?'var(--green-d)':'var(--bg3)'};color:${cfg?'var(--green)':'var(--text3)'};">${cfg?'📊 Sheet':'No sheet'}</span><span style="font-size:10px;font-family:var(--mono);padding:2px 7px;border-radius:4px;background:${hasMapped?'var(--gold-d)':'var(--bg3)'};color:${hasMapped?'var(--gold)':'var(--text3)'};">${hasMapped?'🗂 Mapped':'Unmapped'}</span></div></div><div style="font-size:12px;color:var(--text3);margin-bottom:.5rem;">${dm.length} personnel · ${pct}% active · ${dm.filter(m=>m.status==='loa').length} LOA</div><div style="height:4px;background:var(--bg);border-radius:2px;overflow:hidden;"><div style="height:100%;width:${pct}%;background:${d.color};border-radius:2px;transition:width .3s;"></div></div></div></div>`; }).join('');
 }
+
+/* ════════════════════════════════════════════════════
+   DYNAMIC RANK & BADGE DROPDOWNS
+════════════════════════════════════════════════════ */
+
+// Populate a badge/callsign select from members of a given dept
+function loadMemberBadges(deptElId, badgeElId, rankElId) {
+  const deptId = document.getElementById(deptElId)?.value;
+  const badgeSel = document.getElementById(badgeElId);
+  const rankSel  = rankElId ? document.getElementById(rankElId) : null;
+  if (!badgeSel) return;
+
+  const members = (S.members || [])
+    .filter(m => m.dept === deptId && m.status !== 'inactive')
+    .sort((a,b) => (a.name||'').localeCompare(b.name||''));
+
+  if (!members.length) {
+    badgeSel.innerHTML = '<option value="">— no members in this dept —</option>';
+  } else {
+    badgeSel.innerHTML =
+      '<option value="">— select member —</option>' +
+      members.map(m => {
+        const label = [m.name, m.badge].filter(Boolean).join(' · ');
+        return `<option value="${m.badge||m.name}" data-rank="${m.rank||''}">${label}</option>`;
+      }).join('');
+  }
+
+  // When a badge is picked, auto-fill rank if rankSel exists
+  if (rankSel) {
+    badgeSel.onchange = function() {
+      const selected = badgeSel.options[badgeSel.selectedIndex];
+      const autoRank = selected?.dataset?.rank || '';
+      if (autoRank) {
+        // Try to select that rank in the rank dropdown
+        for (let i = 0; i < rankSel.options.length; i++) {
+          if (rankSel.options[i].value === autoRank) {
+            rankSel.selectedIndex = i;
+            break;
+          }
+        }
+      }
+    };
+  }
+}
+
+// LOA dept changed → reload badges + ranks
+function onLoaDeptChange() {
+  const deptId = document.getElementById('loaDept')?.value;
+  loadMemberBadges('loaDept', 'loaBadge', 'loaRank');
+  loadMemRanks('loaDept', 'loaRank');
+}
+
+// Movement from-dept changed → reload badges + from-rank + new-rank
+function onMovDeptFromChange() {
+  loadMemberBadges('movDeptFrom', 'movBadge', 'movRankFrom');
+  loadMemRanks('movDeptFrom', 'movRankFrom');
+  loadMemRanks('movDeptFrom', 'movNewRank');
+}
+
 
 /* ════════════════════════════════════════════════════
    AUTO SYNC
