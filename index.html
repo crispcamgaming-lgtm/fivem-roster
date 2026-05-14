@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FUDT — Department Toolkit v10</title>
+<title>FUDT — Department Toolkit v11</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Bebas+Neue&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -3061,18 +3061,55 @@ async function changeStatus(memberId,newStatus,deptId){
   triggerWebhook(memberId,`Status changed to ${newStatus}`,deptId);
 }
 
+
+/* ════════════════════════════════════════════════════
+   SLOT & RANK HELPERS
+════════════════════════════════════════════════════ */
+// Returns the exact rank object if the name matches a configured rank for this dept (case-sensitive)
+function getExactRank(deptId, rankName){
+  return (S.ranks[deptId]||[]).find(r=>r.name===rankName)||null;
+}
+// Returns how many members currently fill a rank slot in a dept (optionally excluding one memberId)
+function slotsFilled(deptId, rankName, excludeId=''){
+  return S.members.filter(m=>m.dept===deptId&&m.rank===rankName&&m.id!==excludeId).length;
+}
+// Check if a rank has an open slot (returns true if unlimited or under max)
+function hasOpenSlot(deptId, rankName, excludeId=''){
+  const rd=getExactRank(deptId,rankName); if(!rd) return false;
+  if(!rd.maxSlots||rd.maxSlots===0) return true;
+  return slotsFilled(deptId,rankName,excludeId)<rd.maxSlots;
+}
+// Find next available rank going DOWN the order (higher order number = lower rank)
+function nextAvailableRankDown(deptId, currentRankName){
+  const ranks=(S.ranks[deptId]||[]).sort((a,b)=>a.order-b.order);
+  const cur=ranks.find(r=>r.name===currentRankName);
+  if(!cur) return null;
+  const below=ranks.filter(r=>r.order>cur.order);
+  for(const r of below){ if(hasOpenSlot(deptId,r.name)) return r; }
+  return null;
+}
 async function changeRank(memberId,newRank,deptId){
-  // Slot limit check
-  const rankDef=(S.ranks[deptId]||[]).find(r=>r.name===newRank);
-  if(rankDef&&rankDef.maxSlots>0){
-    const filled=S.members.filter(m=>m.dept===deptId&&m.rank===newRank&&m.id!==memberId).length;
-    if(filled>=rankDef.maxSlots){ toast(`⛔ "${newRank}" is full (${filled}/${rankDef.maxSlots} slots). Remove someone first.`,'err',5000); renderRoster(deptId); return; }
+  // Exact rank name check — must match a configured rank
+  const rankDef=getExactRank(deptId,newRank);
+  if(!rankDef){
+    toast('⛔ "'+newRank+'" is not a configured rank for this department. Rank names must match exactly.','err',5000);
+    renderRoster(deptId); return;
+  }
+  // Slot check
+  if(rankDef.maxSlots>0&&!hasOpenSlot(deptId,newRank,memberId)){
+    const filled=slotsFilled(deptId,newRank,memberId);
+    // Suggest next available slot down
+    const next=nextAvailableRankDown(deptId,newRank);
+    const suggestion=next?' Next open slot: "'+next.name+'" ('+slotsFilled(deptId,next.name)+'/'+next.maxSlots+' filled).':'';
+    toast('⛔ "'+newRank+'" is full ('+filled+'/'+rankDef.maxSlots+' slots).'+suggestion,'err',6000);
+    renderRoster(deptId); return;
   }
   await dbUpdate('fudt_members',memberId,{rank:newRank});
   const m=S.members.find(x=>x.id===memberId); if(m) m.rank=newRank;
-  toast(`Rank updated → ${newRank}`,'ok',2500);
+  const slotInfo=rankDef.maxSlots>0?' (slot '+(slotsFilled(deptId,newRank)+'/'+rankDef.maxSlots)+')':'';
+  toast('✅ Rank updated → '+newRank+slotInfo,'ok',2500);
   renderRoster(deptId);
-  triggerWebhook(memberId,`Rank changed to ${newRank}`,deptId);
+  triggerWebhook(memberId,'Rank changed to '+newRank,deptId);
 }
 
 async function deleteMember(memberId,deptId){
@@ -3124,26 +3161,49 @@ function renderARankList(){
   const deptId=document.getElementById('aRankDept')?.value, el=document.getElementById('aRankList'); if(!el) return;
   const ranks=(S.ranks[deptId]||[]).sort((a,b)=>a.order-b.order);
   if(!ranks.length){ el.innerHTML='<div class="empty-state"><div class="empty-state-icon">🏅</div>No ranks for this department.</div>'; return; }
-  el.innerHTML='<div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:.75rem;">Current Ranks</div>'+
-    ranks.map(r=>`<div class="list-row">
-      <div><div class="list-row-name">${r.name}</div><div class="list-row-sub">Order: ${r.order} · Tier: ${r.tier} · Slots: ${r.maxSlots>0?r.maxSlots:'Unlimited'}</div></div>
-      <div class="list-row-actions">
-        <button class="btn btn-red" style="padding:5px 10px;font-size:11px;" onclick="adminDeleteRank('${r.id}','${deptId}')">Remove</button>
-      </div>
-    </div>`).join('');
+  el.innerHTML='<div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:.75rem;">Current Ranks — names must match your roster exactly</div>'+
+    ranks.map(r=>{
+      const filled=S.members.filter(m=>m.dept===deptId&&m.rank===r.name).length;
+      const slotMax=r.maxSlots||0;
+      const isFull=slotMax>0&&filled>=slotMax;
+      const slotBadge=slotMax>0
+        ?`<span style="font-family:var(--mono);font-size:10px;padding:2px 7px;border-radius:4px;background:${isFull?'var(--red-d)':'var(--green-d)'};color:${isFull?'var(--red)':'var(--green)'};">${filled}/${slotMax} ${isFull?'FULL':'open'}</span>`
+        :`<span style="font-family:var(--mono);font-size:10px;padding:2px 7px;border-radius:4px;background:rgba(255,255,255,.04);color:var(--text3);">${filled} / ∞</span>`;
+      return `<div class="list-row">
+        <div style="flex:1;">
+          <div style="display:flex;align-items:center;gap:.5rem;">
+            <div class="list-row-name">${r.name}</div>
+            ${slotBadge}
+          </div>
+          <div class="list-row-sub">Order: ${r.order} · Tier: ${r.tier} · Max Slots: ${slotMax>0?slotMax:'Unlimited'}</div>
+        </div>
+        <div class="list-row-actions">
+          <button class="btn btn-red" style="padding:5px 10px;font-size:11px;" onclick="adminDeleteRank('${r.id}','${deptId}')">Remove</button>
+        </div>
+      </div>`;
+    }).join('');
 }
 
 async function adminAddRank(){
-  const deptId=document.getElementById('aRankDept').value,name=document.getElementById('aRankName').value.trim(),order=parseInt(document.getElementById('aRankOrder').value)||10,tier=document.getElementById('aRankTier').value,maxSlots=parseInt(document.getElementById('aRankSlots').value)||0;
+  const deptId=document.getElementById('aRankDept').value,name=document.getElementById('aRankName').value.trim(),order=parseInt(document.getElementById('aRankOrder').value)||10,tier=document.getElementById('aRankTier').value,maxSlots=parseInt(document.getElementById('aRankSlots')?.value)||0;
   if(!deptId||!name){ toast('Select a department and enter a rank name','err',3000); return; }
+  if(!S.depts.find(d=>d.id===deptId)){ toast('Invalid department selected','err',3000); return; }
   const nr={id:'r'+uid(),dept_id:deptId,name,ord:order,tier,max_slots:maxSlots};
-  await dbUpsert('fudt_ranks',nr);
+  // Try saving with max_slots; if column missing fall back without it
+  let res=await SB.from('fudt_ranks').upsert(nr,{onConflict:'id'});
+  if(res.error && res.error.message && res.error.message.toLowerCase().includes('max_slots')){
+    toast('\u26a0\ufe0f max_slots column missing. Run SQL migration. Saving rank without slot limit.','err',8000);
+    const{id,dept_id,name:n,ord,tier:t}=nr;
+    res=await SB.from('fudt_ranks').upsert({id,dept_id,name:n,ord,tier:t},{onConflict:'id'});
+  }
+  if(res.error){ toast('\u274c Rank save failed: '+res.error.message,'err',8000); return; }
   if(!S.ranks[deptId]) S.ranks[deptId]=[];
   S.ranks[deptId].push({id:nr.id,name,order,tier,maxSlots});
   document.getElementById('aRankName').value='';
-  document.getElementById('aRankSlots').value='0';
+  if(document.getElementById('aRankSlots')) document.getElementById('aRankSlots').value='0';
   renderARankList();
-  toast(`Rank "${name}" added`+(maxSlots>0?` (${maxSlots} slots)`:''),'ok',3000);
+  if(document.getElementById('aMemDept')?.value===deptId) loadMemRanks('aMemDept','aMemRank');
+  toast('\u2705 Rank "'+name+'" saved'+(maxSlots>0?' ('+maxSlots+' slots)':' (unlimited)'),'ok',4000);
   updateSetupGuide();
 }
 
@@ -3158,18 +3218,28 @@ async function adminAddMember(){
   const name=document.getElementById('aMemName').value.trim(),badge=document.getElementById('aMemBadge').value.trim(),dept=document.getElementById('aMemDept').value,rank=document.getElementById('aMemRank').value,date=document.getElementById('aMemDate').value,status=document.getElementById('aMemStatus').value,discord=document.getElementById('aMemDiscord').value.trim(),msgUser=document.getElementById('aMemMsgUser').value.trim(),notes=document.getElementById('aMemNotes').value.trim();
   const msg=document.getElementById('addMemberMsg');
   if(!name||!dept){ showMsg(msg,'err','Name and department are required.'); return; }
-  // Slot limit check
+  // Exact rank name + slot check
   if(rank){
-    const rankDef=(S.ranks[dept]||[]).find(r=>r.name===rank);
-    if(rankDef&&rankDef.maxSlots>0){
-      const filled=S.members.filter(m=>m.dept===dept&&m.rank===rank).length;
-      if(filled>=rankDef.maxSlots){ showMsg(msg,'err',`⛔ Rank "${rank}" is full — ${filled}/${rankDef.maxSlots} slots used. Promote or remove a member first.`); return; }
+    const rankDef=getExactRank(dept,rank);
+    if(!rankDef){ showMsg(msg,'err','Rank "'+rank+'" does not match any configured rank exactly. Check Admin → Ranks.'); return; }
+    if(rankDef.maxSlots>0&&!hasOpenSlot(dept,rank)){
+      const filled=slotsFilled(dept,rank);
+      const next=nextAvailableRankDown(dept,rank);
+      const sug=next?' Next open: "'+next.name+'" ('+slotsFilled(dept,next.name)+'/'+next.maxSlots+').':'';
+      showMsg(msg,'err','Rank "'+rank+'" is full ('+filled+'/'+rankDef.maxSlots+' slots).'+sug); return;
     }
   }
   const nm={id:'m'+uid(),name,badge,dept,rank,join_date:date,status,discord,message_user:msgUser,notes};
   const ok=await dbUpsert('fudt_members',nm);
-  if(ok){ S.members.push({...nm,date}); showMsg(msg,'ok',`${name} added to roster${rank?' as '+rank:''}.`); ['aMemName','aMemBadge','aMemDate','aMemDiscord','aMemMsgUser','aMemNotes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';}); renderAll(); }
-  else showMsg(msg,'err','Error saving member. Check console.');
+  if(ok){
+    S.members.push({...nm,date});
+    const rankDef=getExactRank(dept,rank);
+    const slotInfo=rankDef&&rankDef.maxSlots>0?' — slot '+(slotsFilled(dept,rank))+'/'+rankDef.maxSlots:'';
+    showMsg(msg,'ok','✅ '+name+' added'+(rank?' as '+rank+slotInfo:'')+' .');
+    ['aMemName','aMemBadge','aMemDate','aMemDiscord','aMemMsgUser','aMemNotes'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+    renderAll();
+  }
+  else showMsg(msg,'err','Error saving member. Check Supabase console for details.');
 }
 
 function renderAUserList(){
@@ -3316,19 +3386,25 @@ function renderHCMemberList(){
 async function hcAddMember(){
   const name=document.getElementById('hMemName').value.trim(),badge=document.getElementById('hMemBadge').value.trim(),rank=document.getElementById('hMemRank').value,status=document.getElementById('hMemStatus').value,date=document.getElementById('hMemDate').value,discord=document.getElementById('hMemDiscord').value.trim();
   if(!name){ toast('Name is required','err',2500); return; }
-  // Slot limit check
-  if(rank&&CU.deptId){
-    const rankDef=(S.ranks[CU.deptId]||[]).find(r=>r.name===rank);
-    if(rankDef&&rankDef.maxSlots>0){
-      const filled=S.members.filter(m=>m.dept===CU.deptId&&m.rank===rank).length;
-      if(filled>=rankDef.maxSlots){ toast(`⛔ "${rank}" is full — ${filled}/${rankDef.maxSlots} slots used. You cannot add another member at this rank.`,'err',6000); return; }
+  const deptId=CU.deptId;
+  // Exact rank match + slot check
+  if(rank&&deptId){
+    const rankDef=getExactRank(deptId,rank);
+    if(!rankDef){ toast('⛔ Rank "'+rank+'" does not match any configured rank exactly for this department.','err',5000); return; }
+    if(rankDef.maxSlots>0&&!hasOpenSlot(deptId,rank)){
+      const filled=slotsFilled(deptId,rank);
+      const next=nextAvailableRankDown(deptId,rank);
+      const sug=next?' Next open slot: "'+next.name+'" ('+slotsFilled(deptId,next.name)+'/'+next.maxSlots+' filled).':'';
+      toast('⛔ "'+rank+'" is full — '+filled+'/'+rankDef.maxSlots+' slots used.'+sug,'err',6000); return;
     }
   }
-  const nm={id:'m'+uid(),name,badge,dept:CU.deptId,rank,join_date:date,status,discord,message_user:'',notes:''};
+  const nm={id:'m'+uid(),name,badge,dept:deptId,rank,join_date:date,status,discord,message_user:'',notes:''};
   await dbUpsert('fudt_members',nm); S.members.push({...nm,date});
   ['hMemName','hMemBadge','hMemDate','hMemDiscord'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   renderHCMemberList(); renderAll();
-  toast(`${name} added to your department${rank?' as '+rank:''}`,'ok',3000);
+  const rankDef=getExactRank(deptId,rank);
+  const slotInfo=rankDef&&rankDef.maxSlots>0?' (slot '+slotsFilled(deptId,rank)+'/'+rankDef.maxSlots+')':'';
+  toast('✅ '+name+' added'+(rank?' as '+rank+slotInfo:'')+' to your department','ok',3000);
 }
 
 function renderHCReqs(){
@@ -3639,9 +3715,26 @@ async function syncDept(deptId){
         const msgUser=msgUserCol>=0?(row[msgUserCol]||'').trim():'';
         let existing=S.members.find(m=>m.dept===deptId&&(m.name.toLowerCase().trim()===name.toLowerCase()||(badge&&m.badge&&m.badge.toLowerCase().trim()===badge.toLowerCase())));
         if(!existing){
-          const newRow={id:'m'+uid(),name,badge,dept:deptId,rank:rank||'',join_date:joinDate,status:'active',discord,message_user:msgUser};
+          // For new members from sheet: validate rank is an exact match to a configured rank
+          let assignedRank='';
+          if(rank){
+            const exactRankDef=getExactRank(deptId,rank);
+            if(exactRankDef){
+              // Check slot availability
+              if(hasOpenSlot(deptId,rank)){
+                assignedRank=rank;
+              } else {
+                const next=nextAvailableRankDown(deptId,rank);
+                if(next&&hasOpenSlot(deptId,next.name)){ assignedRank=next.name; gsLog('warn',`SLOT FULL [${tabLabel}]: ${name} wanted "${rank}" (full) — placed at next open: "${next.name}"`,deptId); }
+                else { assignedRank=''; gsLog('warn',`SLOT FULL [${tabLabel}]: ${name} — "${rank}" full, no lower slots open. Added without rank.`,deptId); }
+              }
+            } else {
+              gsLog('warn',`RANK MISMATCH [${tabLabel}]: "${rank}" is not a configured rank for this dept — member added without rank. Check Admin → Ranks.`,deptId);
+            }
+          }
+          const newRow={id:'m'+uid(),name,badge,dept:deptId,rank:assignedRank,join_date:joinDate,status:'active',discord,message_user:msgUser};
           await dbUpsert('fudt_members',newRow); S.members.push({...newRow,date:joinDate}); created++;
-          gsLog('ok',`NEW [${tabLabel}]: ${name}`,deptId);
+          gsLog('ok',`NEW [${tabLabel}]: ${name}${assignedRank?' @ '+assignedRank:''}`,deptId);
         } else {
           const changes={};
           if(badge&&badge!==existing.badge) changes.badge=badge;
@@ -3649,10 +3742,21 @@ async function syncDept(deptId){
           if(joinDate&&joinDate!==existing.date) changes.join_date=joinDate;
           if(msgUser&&msgUser!==existing.message_user) changes.message_user=msgUser;
           if(rank&&rank!==existing.rank){
-            const already=GS_CONFLICTS.find(c=>c.memberId===existing.id&&c.field==='rank'&&c.sheetValue===rank&&!c.resolved);
-            if(!already){ GS_CONFLICTS.push({id:uid(),deptId,memberId:existing.id,memberName:existing.name,field:'rank',dbValue:existing.rank,sheetValue:rank,ts:Date.now(),resolved:false}); gsLog('warn',`RANK DIFF [${tabLabel}]: ${name} — DB:"${existing.rank}" vs Sheet:"${rank}"`,deptId); }
+            const exactRankDef=getExactRank(deptId,rank);
+            if(!exactRankDef){
+              // Rank name in sheet doesn't match any configured rank — flag it
+              gsLog('warn',`RANK NAME MISMATCH [${tabLabel}]: ${name} — Sheet rank "${rank}" not in configured ranks. Skipping rank update.`,deptId);
+            } else if(hasOpenSlot(deptId,rank,existing.id)){
+              // Exact match and slot available — auto-apply
+              changes.rank=rank;
+              gsLog('ok',`RANK SYNC [${tabLabel}]: ${name} updated to "${rank}" (exact match, slot available)`,deptId);
+            } else {
+              // Exact match but rank is full — flag as conflict
+              const already=GS_CONFLICTS.find(c=>c.memberId===existing.id&&c.field==='rank'&&c.sheetValue===rank&&!c.resolved);
+              if(!already){ GS_CONFLICTS.push({id:uid(),deptId,memberId:existing.id,memberName:existing.name,field:'rank',dbValue:existing.rank,sheetValue:rank,ts:Date.now(),resolved:false}); gsLog('warn',`RANK FULL [${tabLabel}]: ${name} — "${rank}" is full, cannot auto-apply. Review conflict.`,deptId); }
+            }
           }
-          if(Object.keys(changes).length){ await dbUpdate('fudt_members',existing.id,{...changes,updated_at:new Date().toISOString()}); Object.assign(existing,changes); synced++; gsLog('ok',`Updated [${tabLabel}]: ${name}`,deptId); }
+          if(Object.keys(changes).length){ await dbUpdate('fudt_members',existing.id,{...changes}); Object.assign(existing,changes); if(existing.rank&&changes.rank) existing.rank=changes.rank; synced++; gsLog('ok',`Updated [${tabLabel}]: ${name}`,deptId); }
         }
       }
       gsLog('ok',`Tab "${tabLabel}" done`,deptId);
