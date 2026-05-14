@@ -1388,6 +1388,165 @@ body::before {
   .quick-actions { grid-template-columns: 1fr 1fr; }
   .form-page-hdr { flex-direction: column; align-items: flex-start; }
 }
+
+/* ═══════════════════════════════════════════════
+   DEPARTMENT ROSTER SYSTEM
+═══════════════════════════════════════════════ */
+.roster-board {
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+}
+.roster-rank-row {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  transition: border-color .2s;
+}
+.roster-rank-row:hover { border-color: var(--border2); }
+.roster-rank-hdr {
+  display: flex; align-items: center; gap: .75rem;
+  padding: .75rem 1.125rem;
+  background: rgba(0,0,0,.25);
+  border-bottom: 1px solid var(--border);
+  border-left: 3px solid var(--gold);
+}
+.roster-rank-title {
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 2px; text-transform: uppercase;
+  color: var(--gold);
+}
+.roster-rank-meta {
+  font-family: var(--mono); font-size: 10px; color: var(--text3);
+  margin-left: auto; display: flex; align-items: center; gap: .5rem;
+}
+.roster-slots {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: .75rem;
+  padding: .875rem 1.125rem;
+}
+.roster-slot {
+  background: rgba(255,255,255,.025);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-s);
+  padding: .875rem;
+  transition: all .15s;
+  position: relative;
+  min-height: 90px;
+}
+.roster-slot.filled { border-color: rgba(255,255,255,.1); }
+.roster-slot.filled:hover { border-color: var(--border2); background: rgba(255,255,255,.04); }
+.roster-slot.empty {
+  border-style: dashed;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  min-height: 90px;
+}
+.roster-slot.empty:hover { background: rgba(0,229,160,.05); border-color: rgba(0,229,160,.3); }
+.slot-empty-label { font-size: 11px; color: var(--text3); text-align: center; }
+.slot-empty-label span { display: block; font-size: 18px; margin-bottom: 4px; }
+.slot-num {
+  position: absolute; top: 8px; right: 10px;
+  font-family: var(--mono); font-size: 9px; color: var(--text3);
+}
+.slot-name { font-weight: 600; font-size: 14px; margin-bottom: 2px; }
+.slot-badge { font-family: var(--mono); font-size: 10px; color: var(--text3); margin-bottom: 4px; }
+.slot-discord { font-size: 11px; color: var(--text3); margin-bottom: 6px; }
+.slot-actions { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 6px; }
+.slot-btn {
+  font-size: 10px; font-weight: 600; padding: 3px 9px;
+  border-radius: 4px; border: none; cursor: pointer;
+  font-family: var(--mono); letter-spacing: .5px;
+  transition: all .15s;
+}
+.slot-btn-loa { background: var(--blue-d); color: var(--blue); border: 1px solid rgba(77,168,255,.25); }
+.slot-btn-loa:hover { background: var(--blue); color: #fff; }
+.slot-btn-move { background: rgba(255,255,255,.05); color: var(--text3); border: 1px solid var(--border2); }
+.slot-btn-move:hover { background: var(--amber-d); color: var(--amber); border-color: rgba(255,193,71,.3); }
+.slot-btn-remove { background: var(--red-d); color: var(--red); border: 1px solid rgba(255,77,109,.25); }
+.slot-btn-remove:hover { background: var(--red); color: #fff; }
+.slot-status-loa {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 9px; font-family: var(--mono); font-weight: 700;
+  color: var(--blue); background: var(--blue-d);
+  border-radius: 4px; padding: 2px 6px;
+  letter-spacing: .5px; margin-bottom: 4px;
+}
+
+/* Slot picker dropdown overlay */
+.slot-picker-overlay {
+  position: fixed; inset: 0; z-index: 600;
+  background: rgba(0,0,0,.6);
+  display: flex; align-items: center; justify-content: center;
+  backdrop-filter: blur(4px);
+}
+.slot-picker {
+  background: var(--card);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-l);
+  width: 420px; max-width: 95vw;
+  max-height: 80vh;
+  display: flex; flex-direction: column;
+  box-shadow: 0 24px 60px rgba(0,0,0,.6);
+  overflow: hidden;
+}
+.slot-picker-hdr {
+  padding: 1.125rem 1.375rem;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.slot-picker-title { font-family: var(--head); font-size: 18px; letter-spacing: 2px; color: var(--green); }
+.slot-picker-body { overflow-y: auto; flex: 1; padding: .75rem; }
+.slot-picker-search {
+  width: 100%;
+  background: rgba(255,255,255,.04);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-s);
+  color: var(--text);
+  font-family: var(--mono); font-size: 12px;
+  padding: 9px 12px; outline: none;
+  margin-bottom: .75rem;
+}
+.slot-picker-search:focus { border-color: var(--green); }
+.picker-member-row {
+  display: flex; align-items: center; gap: .75rem;
+  padding: .625rem .75rem;
+  border-radius: var(--radius-s);
+  cursor: pointer;
+  transition: background .1s;
+}
+.picker-member-row:hover { background: rgba(255,255,255,.05); }
+.picker-avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--green-g);
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 12px; color: #080c12;
+  flex-shrink: 0;
+}
+.picker-name { font-weight: 600; font-size: 13px; }
+.picker-meta { font-size: 11px; color: var(--text3); font-family: var(--mono); }
+
+/* Roster builder */
+.rb-rank-row {
+  display: flex; align-items: center; gap: .75rem;
+  padding: .75rem 0; border-bottom: 1px solid var(--border);
+}
+.rb-rank-row:last-child { border-bottom: none; }
+.rb-rank-drag { color: var(--text3); font-size: 14px; cursor: grab; }
+.rb-rank-name { flex: 1; font-weight: 600; font-size: 13px; }
+.rb-rank-slots { font-family: var(--mono); font-size: 11px; color: var(--text3); }
+.rb-rank-actions { display: flex; gap: 5px; }
+
+/* GS write-back status */
+.gs-write-badge {
+  font-size: 9px; font-family: var(--mono); font-weight: 700;
+  padding: 2px 7px; border-radius: 4px; letter-spacing: .5px;
+}
+.gs-ok { background: var(--green-d); color: var(--green); }
+.gs-err { background: var(--red-d); color: var(--red); }
+.gs-idle { background: rgba(255,255,255,.05); color: var(--text3); }
 </style>
 </head>
 <body>
@@ -1778,6 +1937,9 @@ body::before {
       </button>
       <button class="sb-item" id="navSubdiv" onclick="gotoPage('subdiv')">
         <span class="sb-icon">🏛️</span>Subdivision
+      </button>
+      <button class="sb-item" id="navDeptRoster" onclick="gotoPage('deptroster')">
+        <span class="sb-icon">🗂️</span>Dept Roster
       </button>
       <button class="sb-item" id="navHelp" onclick="gotoPage('help')">
         <span class="sb-icon">📖</span>Toolkit Guide
@@ -2352,6 +2514,64 @@ body::before {
               </div>
               <div class="card-body-p0"><div id="subRosterList" style="max-height:480px;overflow-y:auto;"></div></div>
             </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DEPARTMENT ROSTER PAGE -->
+      <div class="page" id="pg-deptroster">
+        <div class="form-page-hdr">
+          <div>
+            <div class="form-page-title" style="color:var(--gold);">DEPARTMENT ROSTER</div>
+            <div class="form-page-sub">Visual rank-slot roster · Assign members · Sync to Google Sheets</div>
+          </div>
+          <div style="display:flex;gap:.5rem;align-items:center;" id="deptRosterTopActions">
+            <select class="fs" id="drDeptSel" style="min-width:200px;" onchange="renderDeptRosterPage()">
+              <option value="">— Select Department —</option>
+            </select>
+            <button class="btn btn-green" id="drSyncBtn" onclick="syncRosterToSheet()" style="display:none;">📤 Sync to Sheet</button>
+            <span id="drGsStatus" class="gs-write-badge gs-idle" style="display:none;">SHEET IDLE</span>
+          </div>
+        </div>
+
+        <!-- Roster Builder card (admin only) -->
+        <div id="drBuilderSection" style="display:none;margin-bottom:1.5rem;">
+          <div class="card">
+            <div class="card-hdr">
+              <div class="card-title">🏗️ Roster Builder <span style="font-size:11px;font-family:var(--mono);color:var(--text3);font-weight:400;">— Configure ranks &amp; slot counts from the dept's existing ranks</span></div>
+              <button class="btn btn-green" style="font-size:11px;padding:6px 12px;" onclick="openRosterBuilderModal()">⚙ Configure Slots</button>
+            </div>
+            <div class="card-body" style="display:flex;gap:1rem;flex-wrap:wrap;align-items:center;">
+              <div style="font-size:12px;color:var(--text3);">The roster uses ranks already set up in <strong style="color:var(--text);">Admin → Ranks</strong>. Click <strong style="color:var(--green);">Configure Slots</strong> to set how many slots each rank shows on this visual board.</div>
+              <div id="drBuilderStats" style="display:flex;gap:1rem;flex-wrap:wrap;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Apps Script URL config (admin only) -->
+        <div id="drScriptSection" style="display:none;margin-bottom:1.5rem;">
+          <div class="card">
+            <div class="card-hdr"><div class="card-title">📤 Google Apps Script Write-Back</div></div>
+            <div class="card-body">
+              <div class="info-box green" style="margin-bottom:1rem;">Paste your Google Apps Script Web App URL below. Every slot assignment, LOA toggle, or removal will instantly write to that department's Google Sheet.</div>
+              <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;">
+                <input class="fi" id="drScriptUrl" placeholder="https://script.google.com/macros/s/XXX/exec" style="flex:1;min-width:280px;font-size:12px;" oninput="saveDrScriptUrl()">
+                <button class="btn btn-ghost" style="font-size:12px;" onclick="testDrScriptUrl()">▶ Test</button>
+                <span id="drScriptStatus" class="gs-write-badge gs-idle">NOT SET</span>
+              </div>
+              <div style="font-size:11px;color:var(--text3);margin-top:.5rem;font-family:var(--mono);">Apps Script tab must match the <strong style="color:var(--text);">Roster</strong> tab name in your sheet (configurable below).</div>
+              <div style="display:flex;gap:.75rem;align-items:center;flex-wrap:wrap;margin-top:.75rem;">
+                <div class="fg" style="margin:0;flex:1;min-width:160px;"><label class="fl" style="margin-bottom:4px;">Sheet Tab Name</label><input class="fi" id="drSheetTab" placeholder="Roster" value="Roster" oninput="saveDrScriptUrl()" style="font-size:12px;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live visual roster board -->
+        <div id="drRosterBoard">
+          <div class="empty-state" style="border:1px solid var(--border);border-radius:var(--radius);">
+            <div class="empty-state-icon">🗂️</div>
+            Select a department above to view its visual roster board
           </div>
         </div>
       </div>
