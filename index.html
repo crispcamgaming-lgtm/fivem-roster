@@ -1605,6 +1605,7 @@ body::before {
       <button class="mtab" style="color:var(--gold);" onclick="aTab('fieldmap',this)">🗂 Field Mapping</button>
       <button class="mtab" onclick="aTab('synclog',this)">📋 Sync Log</button>
       <button class="mtab" onclick="aTab('health',this)">💊 Health</button>
+      <button class="mtab" style="color:var(--amber);" onclick="aTab('badges',this)">🪪 Badges</button>
     </div>
     <div class="modal-body">
 
@@ -1840,6 +1841,26 @@ body::before {
         <div class="health-grid" id="healthGrid"></div>
         <div style="font-size:10px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:.75rem;">Department Breakdown</div>
         <div id="healthDeptBreakdown"></div>
+      </div>
+
+      <!-- BADGES -->
+      <div class="mpanel" id="ap-badges">
+        <div style="font-family:var(--head);font-size:22px;font-weight:400;letter-spacing:2px;color:var(--amber);margin-bottom:.25rem;">🪪 BADGE IMAGES</div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:1.25rem;font-family:var(--mono);">Assign a badge image to each rank per department. Members will see and download their badge automatically.</div>
+        <div class="info-box" style="margin-bottom:1.25rem;border-color:rgba(255,209,102,.2);background:var(--gold-d);">
+          Paste an <strong>image URL</strong> (direct link ending in .png/.jpg) or use a file hosting service like Imgur, Discord CDN, or Google Drive direct link. The image is stored and displayed directly on the badge page.
+        </div>
+        <div class="frow" style="margin-bottom:1.25rem;">
+          <div class="fg">
+            <label class="fl">Department</label>
+            <select class="fs" id="abDept" onchange="renderAdminBadgeRanks()"></select>
+          </div>
+          <div class="fg">
+            <label class="fl">Rank</label>
+            <select class="fs" id="abRank"><option value="">— select department first —</option></select>
+          </div>
+        </div>
+        <div id="abRankList"></div>
       </div>
     </div>
   </div>
@@ -2314,26 +2335,26 @@ body::before {
         <div class="form-page-hdr">
           <div>
             <div class="form-page-title" style="color:var(--gold);">BADGE REQUEST</div>
-            <div class="form-page-sub">Request your department badge · View your current badge info</div>
+            <div class="form-page-sub">Your rank badge · View &amp; download instantly</div>
           </div>
         </div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;align-items:start;">
           <div class="card">
-            <div class="card-hdr"><div class="card-title">🪪 Request / View Badge</div></div>
+            <div class="card-hdr"><div class="card-title">🪪 Get Your Badge</div></div>
             <div class="card-body">
               <div class="info-box" style="margin-bottom:1.25rem;border-color:rgba(255,209,102,.2);background:var(--gold-d);">
-                Enter your badge number to look up your badge details, or submit a request for a new badge assignment.
+                Select your department and name. Your badge will appear automatically based on your current rank.
               </div>
               <div class="frow">
                 <div class="fg"><label class="fl">Department</label><select class="fs" id="badgeDept" onchange="loadMemberBadges('badgeDept','badgeBadge','badgeRank');loadMemRanks('badgeDept','badgeRank');badgeAutoFill();"></select></div>
-                <div class="fg"><label class="fl">Member</label><select class="fs" id="badgeBadge" onchange="badgeAutoFill()"><option value="">— select dept first —</option></select></div>
+                <div class="fg"><label class="fl">Your Name</label><select class="fs" id="badgeBadge" onchange="badgeAutoFill()"><option value="">— select dept first —</option></select></div>
               </div>
               <div class="frow">
-                <div class="fg"><label class="fl">Rank</label><select class="fs" id="badgeRank"><option value="">—</option></select></div>
+                <div class="fg"><label class="fl">Rank (auto-filled)</label><select class="fs" id="badgeRank" onchange="badgeAutoFill()"><option value="">—</option></select></div>
                 <div class="fg"><label class="fl">Discord Username</label><input class="fi" id="badgeDiscord" placeholder="your_username"></div>
               </div>
-              <div class="fg"><label class="fl">Badge Type Requested</label>
-                <select class="fs" id="badgeType">
+              <div class="fg"><label class="fl">Badge Type</label>
+                <select class="fs" id="badgeType" onchange="badgeAutoFill()">
                   <option value="standard">Standard Duty Badge</option>
                   <option value="vehicle">Vehicle Plate Badge</option>
                   <option value="supervisor">Supervisor Badge</option>
@@ -2341,16 +2362,45 @@ body::before {
                   <option value="replacement">Replacement (Lost/Damaged)</option>
                 </select>
               </div>
-              <div class="fg"><label class="fl">Additional Notes (optional)</label><textarea class="fta" id="badgeNotes" style="min-height:60px;" placeholder="Any special requests or context…"></textarea></div>
+              <div class="fg"><label class="fl">Notes (optional)</label><textarea class="fta" id="badgeNotes" style="min-height:60px;" placeholder="Any special requests…"></textarea></div>
               <button class="btn" style="width:100%;background:var(--gold-d);border:1px solid rgba(255,209,102,.3);color:var(--gold);" onclick="submitBadgeRequest()">🪪 Submit Badge Request</button>
               <div class="fmsg" id="badgeMsg"></div>
             </div>
           </div>
+
+          <!-- RIGHT COLUMN: badge preview + history -->
           <div>
-            <div class="card" id="badgeProfileCard" style="margin-bottom:1.25rem;display:none;">
-              <div class="card-hdr"><div class="card-title">📛 Badge Profile</div></div>
-              <div class="card-body" id="badgeProfile"></div>
+            <!-- Badge Preview Card -->
+            <div class="card" id="badgePreviewCard" style="margin-bottom:1.25rem;display:none;">
+              <div style="height:3px;background:linear-gradient(90deg,var(--gold),transparent);"></div>
+              <div class="card-hdr"><div class="card-title" style="color:var(--gold);">📛 Your Badge</div></div>
+              <div class="card-body" style="display:flex;flex-direction:column;align-items:center;gap:1.25rem;">
+                <!-- Badge image display -->
+                <div id="badgeImgWrap" style="width:100%;max-width:320px;border-radius:var(--radius);overflow:hidden;border:2px solid rgba(255,209,102,.25);background:rgba(255,209,102,.04);min-height:180px;display:flex;align-items:center;justify-content:center;">
+                  <div id="badgeImgPlaceholder" style="text-align:center;padding:2rem;color:var(--text3);">
+                    <div style="font-size:40px;margin-bottom:.5rem;">🪪</div>
+                    <div style="font-size:12px;">No badge image set for this rank yet.<br>Contact an admin.</div>
+                  </div>
+                  <img id="badgeImg" src="" alt="Badge" style="display:none;width:100%;height:auto;object-fit:contain;" onerror="badgeImgError()">
+                </div>
+                <!-- Member info strip -->
+                <div id="badgeInfoStrip" style="width:100%;"></div>
+                <!-- Download button -->
+                <a id="badgeDownloadBtn" href="#" download="badge.png" style="display:none;width:100%;">
+                  <button class="btn" style="width:100%;background:var(--gold-d);border:1px solid rgba(255,209,102,.3);color:var(--gold);font-size:13px;">⬇ Download Badge</button>
+                </a>
+              </div>
             </div>
+
+            <!-- No badge configured notice -->
+            <div class="card" id="badgeNoneCard" style="margin-bottom:1.25rem;display:none;">
+              <div class="card-body" style="text-align:center;padding:2rem;">
+                <div style="font-size:36px;margin-bottom:.75rem;">🚫</div>
+                <div style="font-weight:600;margin-bottom:.5rem;">No Badge Configured</div>
+                <div style="font-size:12px;color:var(--text3);">An admin hasn't uploaded a badge image for your rank yet.<br>Ask your department admin to set it up in Admin → Badges.</div>
+              </div>
+            </div>
+
             <div class="card">
               <div class="card-hdr"><div class="card-title">📋 Badge Request History</div></div>
               <div class="card-body-p0">
@@ -2572,6 +2622,42 @@ body::before {
           <div class="empty-state" style="border:1px solid var(--border);border-radius:var(--radius);">
             <div class="empty-state-icon">🗂️</div>
             Select a department above to view its visual roster board
+          </div>
+        </div>
+      </div>
+
+      <!-- SLOT ASSIGN PICKER MODAL -->
+      <div class="slot-picker-overlay" id="slotPickerOverlay" style="display:none;" onclick="if(event.target===this)closeSlotPicker()">
+        <div class="slot-picker">
+          <div class="slot-picker-hdr">
+            <div>
+              <div class="slot-picker-title" id="spTitle">ASSIGN SLOT</div>
+              <div style="font-size:11px;color:var(--text3);font-family:var(--mono);margin-top:2px;" id="spSubtitle"></div>
+            </div>
+            <button class="modal-close" onclick="closeSlotPicker()">✕</button>
+          </div>
+          <div class="slot-picker-body">
+            <input class="slot-picker-search" id="spSearch" placeholder="Search name, badge, discord…" oninput="renderPickerList()">
+            <div id="spMemberList"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SLOT MOVE PICKER MODAL -->
+      <div class="slot-picker-overlay" id="movePickerOverlay" style="display:none;" onclick="if(event.target===this)closeMoveRankPicker()">
+        <div class="slot-picker">
+          <div class="slot-picker-hdr">
+            <div>
+              <div class="slot-picker-title" style="color:var(--amber);">MOVE TO RANK</div>
+              <div style="font-size:11px;color:var(--text3);font-family:var(--mono);margin-top:2px;" id="mpSubtitle"></div>
+            </div>
+            <button class="modal-close" onclick="closeMoveRankPicker()">✕</button>
+          </div>
+          <div class="slot-picker-body">
+            <div style="font-size:11px;color:var(--text3);margin-bottom:.75rem;padding:.625rem;background:rgba(255,255,255,.03);border-radius:var(--radius-s);border:1px solid var(--border);">
+              Select the rank to move <strong id="mpMemberName" style="color:var(--text);"></strong> to. Full ranks are blocked.
+            </div>
+            <div id="mpRankList"></div>
           </div>
         </div>
       </div>
@@ -2805,10 +2891,10 @@ const GS_FIELDS = [
    SUPABASE
 ════════════════════════════════════════════════════ */
 let SB=null, SUBS=[];
-async function dbGet(t){ const{data,error}=await SB.from(t).select('*'); if(error){console.warn('dbGet',t,error.message);return[];} return data||[]; }
-async function dbUpsert(t,row){ const{error}=await SB.from(t).upsert(row,{onConflict:'id'}); if(error) console.warn('dbUpsert',t,error.message); return !error; }
-async function dbDelete(t,id){ const{error}=await SB.from(t).delete().eq('id',id); if(error) console.warn('dbDelete',t,error.message); return !error; }
-async function dbUpdate(t,id,u){ const{error}=await SB.from(t).update(u).eq('id',id); if(error) console.warn('dbUpdate',t,error.message); return !error; }
+async function dbGet(t){ try{ const{data,error}=await SB.from(t).select('*'); if(error){console.warn('dbGet',t,String(error.message||error));return[];} return data||[]; }catch(e){console.warn('dbGet',t,String(e.message||e));return[];} }
+async function dbUpsert(t,row){ try{ const{error}=await SB.from(t).upsert(row,{onConflict:'id'}); if(error) console.warn('dbUpsert',t,String(error.message||error)); return !error; }catch(e){console.warn('dbUpsert',t,String(e.message||e));return false;} }
+async function dbDelete(t,id){ try{ const{error}=await SB.from(t).delete().eq('id',id); if(error) console.warn('dbDelete',t,String(error.message||error)); return !error; }catch(e){console.warn('dbDelete',t,String(e.message||e));return false;} }
+async function dbUpdate(t,id,u){ try{ const{error}=await SB.from(t).update(u).eq('id',id); if(error) console.warn('dbUpdate',t,String(error.message||error)); return !error; }catch(e){console.warn('dbUpdate',t,String(e.message||e));return false;} }
 
 /* ════════════════════════════════════════════════════
    STATE
@@ -2916,7 +3002,7 @@ async function doLogin(){
   if(!u||!p){ errEl.textContent='⚠ Enter your username and password.'; errEl.style.display='block'; setTimeout(()=>errEl.style.display='none',3500); return; }
   // Ensure Supabase is initialized
   if(!SB){
-    try{ SB=supabase.createClient(_SB_URL,_SB_KEY); }
+    try{ SB=supabase.createClient(_SB_URL,_SB_KEY,{auth:{persistSession:false,detectSessionInUrl:false}}); }
     catch(e){ errEl.textContent='⚠ Connection error — please refresh and try again.'; errEl.style.display='block'; return; }
   }
   const btn=document.querySelector('#panelLogin .lbtn');
@@ -3026,6 +3112,11 @@ function gotoPage(p){
   if(p==='punish') { populatePunishFilters(); renderPunishLog(); }
   if(p==='badge') { renderBadgeLog(); }
   if(p==='subdiv') { renderActivityLog(); renderSubRoster(); }
+  if(p==='deptroster'){
+    populateDrDeptSel();
+    const sel=document.getElementById('drDeptSel');
+    if(sel&&!sel.value&&AD){ sel.value=AD; renderDeptRosterPage(); }
+  }
 }
 
 function openAdmin(){ document.getElementById('modalAdmin').classList.add('open'); renderADeptList(); renderAUserList(); renderARankList(); renderPendingList('aPendingList',true); renderAdminReqs(); renderHealth(); updateSetupGuide(); }
@@ -3651,6 +3742,8 @@ function populateAllFormDepts(){
     el.innerHTML='<option value="">All Depts</option>'+S.depts.map(d=>`<option value="${d.id}">${d.abbr||d.name}</option>`).join('');
     if(cur) el.value=cur;
   });
+  // Dept roster selector
+  populateDrDeptSel();
 }
 
 function loadMemRanks(deptElId,rankElId,forceDeptId){
@@ -4075,7 +4168,7 @@ function showMsg(el,type,text){
    BOOT
 ════════════════════════════════════════════════════ */
 (async function boot(){
-  SB=supabase.createClient(_SB_URL,_SB_KEY);
+  SB=supabase.createClient(_SB_URL,_SB_KEY,{auth:{persistSession:false,detectSessionInUrl:false}});
   setSyncStatus('syncing','CONNECTING...');
   try{
     await SB.from('fudt_users').select('id').limit(1);
@@ -4265,33 +4358,157 @@ function renderPunishLog(){
 /* ════════════════════════════════════════════════════
    BADGE REQUEST
 ════════════════════════════════════════════════════ */
+/* ════════════════════════════════════════════════════
+   BADGE IMAGE SYSTEM
+════════════════════════════════════════════════════ */
+const LS_BADGE_IMAGES = 'fudt_badge_images'; // { "deptId|rankName": "imageUrl" }
+
+function getBadgeImages(){ try{ return JSON.parse(localStorage.getItem(LS_BADGE_IMAGES)||'{}'); }catch(e){ return {}; } }
+function saveBadgeImages(obj){ localStorage.setItem(LS_BADGE_IMAGES,JSON.stringify(obj)); }
+function getBadgeImageKey(deptId,rankName){ return deptId+'|'+rankName; }
+function getBadgeImage(deptId,rankName){ return getBadgeImages()[getBadgeImageKey(deptId,rankName)]||''; }
+function setBadgeImage(deptId,rankName,url){ const all=getBadgeImages(); all[getBadgeImageKey(deptId,rankName)]=url; saveBadgeImages(all); }
+function removeBadgeImage(deptId,rankName){ const all=getBadgeImages(); delete all[getBadgeImageKey(deptId,rankName)]; saveBadgeImages(all); }
+
+/* ── Admin: populate dept dropdown in Badges tab ── */
+function renderAdminBadgeDepts(){
+  const sel=document.getElementById('abDept'); if(!sel) return;
+  sel.innerHTML=S.depts.map(d=>`<option value="${d.id}">${d.name}</option>`).join('');
+  renderAdminBadgeRanks();
+}
+
+/* ── Admin: render rank list with image inputs for selected dept ── */
+function renderAdminBadgeRanks(){
+  const deptId=document.getElementById('abDept')?.value;
+  const el=document.getElementById('abRankList'); if(!el||!deptId) return;
+  const dept=S.depts.find(d=>d.id===deptId);
+  const ranks=(S.ranks[deptId]||[]).sort((a,b)=>a.order-b.order);
+  if(!ranks.length){
+    el.innerHTML='<div class="empty-state"><div class="empty-state-icon">🏅</div>No ranks configured for this department.<br><span style="font-size:12px;">Go to Admin → Ranks first.</span></div>';
+    return;
+  }
+  const images=getBadgeImages();
+  el.innerHTML=`<div style="display:flex;flex-direction:column;gap:1rem;">
+    ${ranks.map(r=>{
+      const key=getBadgeImageKey(deptId,r.name);
+      const existingUrl=images[key]||'';
+      return `<div style="background:rgba(255,255,255,.02);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;">
+        <div style="display:flex;align-items:center;gap:.75rem;padding:.75rem 1rem;background:rgba(0,0,0,.2);border-bottom:1px solid var(--border);">
+          <div style="width:8px;height:8px;border-radius:50%;background:var(--gold);flex-shrink:0;"></div>
+          <div style="font-weight:700;font-size:13px;">${r.name}</div>
+          <div style="font-size:10px;font-family:var(--mono);color:var(--text3);padding:2px 7px;background:rgba(255,255,255,.04);border-radius:4px;">${r.tier}</div>
+          ${existingUrl?'<span style="font-size:10px;font-family:var(--mono);color:var(--green);background:var(--green-d);padding:2px 7px;border-radius:4px;">✓ SET</span>':'<span style="font-size:10px;font-family:var(--mono);color:var(--text3);background:rgba(255,255,255,.04);padding:2px 7px;border-radius:4px;">NOT SET</span>'}
+        </div>
+        <div style="padding:.875rem 1rem;display:flex;gap:.75rem;align-items:flex-start;flex-wrap:wrap;">
+          <!-- Image preview -->
+          <div style="width:90px;height:90px;border-radius:var(--radius-s);border:1px solid var(--border);background:rgba(255,255,255,.03);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;" id="abPreview_${deptId}_${r.id}">
+            ${existingUrl
+              ?`<img src="${existingUrl}" style="width:100%;height:100%;object-fit:contain;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div style="display:none;align-items:center;justify-content:center;font-size:24px;width:100%;height:100%;">❌</div>`
+              :`<span style="font-size:28px;">🪪</span>`}
+          </div>
+          <div style="flex:1;min-width:200px;">
+            <label class="fl" style="margin-bottom:6px;">Image URL <span style="color:var(--text3);font-size:10px;">(direct link to .png/.jpg/.webp)</span></label>
+            <input class="fi" id="abUrl_${deptId}_${r.id}" value="${existingUrl}" placeholder="https://i.imgur.com/..." style="font-size:12px;margin-bottom:.5rem;" oninput="abPreviewImage('${deptId}','${r.id}')">
+            <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
+              <button class="btn btn-green" style="font-size:11px;padding:6px 12px;" onclick="abSaveBadge('${deptId}','${r.id}','${r.name}')">💾 Save</button>
+              ${existingUrl?`<button class="btn btn-red" style="font-size:11px;padding:6px 12px;" onclick="abRemoveBadge('${deptId}','${r.id}','${r.name}')">✕ Remove</button>`:''}
+            </div>
+          </div>
+        </div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+
+function abPreviewImage(deptId,rankId){
+  const url=document.getElementById(`abUrl_${deptId}_${rankId}`)?.value?.trim();
+  const wrap=document.getElementById(`abPreview_${deptId}_${rankId}`);
+  if(!wrap) return;
+  if(!url){ wrap.innerHTML='<span style="font-size:28px;">🪪</span>'; return; }
+  wrap.innerHTML=`<img src="${url}" style="width:100%;height:100%;object-fit:contain;" onerror="this.parentElement.innerHTML='<span style=\\'font-size:24px;\\'>❌</span><div style=\\'font-size:9px;color:var(--red);\\'>Bad URL</div>'">`;
+}
+
+function abSaveBadge(deptId,rankId,rankName){
+  const url=document.getElementById(`abUrl_${deptId}_${rankId}`)?.value?.trim();
+  if(!url){ toast('Paste an image URL first','err',3000); return; }
+  setBadgeImage(deptId,rankName,url);
+  renderAdminBadgeRanks();
+  toast('✅ Badge image saved for '+rankName,'ok',3000);
+}
+
+function abRemoveBadge(deptId,rankId,rankName){
+  if(!confirm('Remove badge image for '+rankName+'?')) return;
+  removeBadgeImage(deptId,rankName);
+  renderAdminBadgeRanks();
+  toast('Badge image removed','ok',2500);
+}
+
+/* ── Member: auto-fill badge page when member is selected ── */
 function badgeAutoFill(){
   const deptId=document.getElementById('badgeDept')?.value;
-  const badge=document.getElementById('badgeBadge')?.value;
-  if(!badge||!deptId){ document.getElementById('badgeProfileCard').style.display='none'; return; }
-  const member=S.members.find(m=>m.dept===deptId&&(m.badge===badge||m.name===badge));
+  const badgeVal=document.getElementById('badgeBadge')?.value;
+
+  // Hide cards initially
+  document.getElementById('badgePreviewCard').style.display='none';
+  document.getElementById('badgeNoneCard').style.display='none';
+
+  if(!deptId||!badgeVal) return;
+
+  const member=S.members.find(m=>m.dept===deptId&&(m.badge===badgeVal||m.name===badgeVal));
+  if(!member) return;
+
   const dept=S.depts.find(d=>d.id===deptId);
-  if(!member){ document.getElementById('badgeProfileCard').style.display='none'; return; }
-  const card=document.getElementById('badgeProfileCard');
-  const profile=document.getElementById('badgeProfile');
-  card.style.display='block';
-  profile.innerHTML=`
-    <div style="display:flex;gap:1rem;align-items:center;margin-bottom:1rem;">
-      <div style="width:44px;height:44px;border-radius:50%;background:${dept?.color||'var(--gold)'};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;color:#080c12;">${member.name.charAt(0)}</div>
-      <div>
-        <div style="font-weight:700;font-size:14px;">${member.name}</div>
-        <div style="font-size:12px;color:var(--text3);">${member.rank||'—'} · <span style="color:${dept?.color||'var(--gold)'};">${dept?.abbr||deptId}</span></div>
-      </div>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem;font-size:12px;">
-      <div style="padding:.5rem;background:rgba(255,255,255,.03);border-radius:var(--radius-s);border:1px solid var(--border);"><div style="color:var(--text3);font-size:10px;margin-bottom:2px;">BADGE #</div><strong style="font-family:var(--mono);">${member.badge||'—'}</strong></div>
-      <div style="padding:.5rem;background:rgba(255,255,255,.03);border-radius:var(--radius-s);border:1px solid var(--border);"><div style="color:var(--text3);font-size:10px;margin-bottom:2px;">STATUS</div><strong style="color:${member.status==='active'?'var(--green)':'var(--text2)'};">${member.status.toUpperCase()}</strong></div>
-      <div style="padding:.5rem;background:rgba(255,255,255,.03);border-radius:var(--radius-s);border:1px solid var(--border);"><div style="color:var(--text3);font-size:10px;margin-bottom:2px;">HIRE DATE</div><strong>${member.date||'—'}</strong></div>
-      <div style="padding:.5rem;background:rgba(255,255,255,.03);border-radius:var(--radius-s);border:1px solid var(--border);"><div style="color:var(--text3);font-size:10px;margin-bottom:2px;">DISCORD</div><strong>${member.discord||'—'}</strong></div>
-    </div>
-  `;
+
   // Pre-fill discord
   if(member.discord) document.getElementById('badgeDiscord').value=member.discord;
+
+  // Auto-select rank in dropdown
+  const rankSel=document.getElementById('badgeRank');
+  if(rankSel&&member.rank){
+    for(let i=0;i<rankSel.options.length;i++){
+      if(rankSel.options[i].value===member.rank){ rankSel.selectedIndex=i; break; }
+    }
+  }
+
+  // Get current rank (from dropdown in case they manually changed it)
+  const rankName=document.getElementById('badgeRank')?.value||member.rank||'';
+
+  // Look up badge image
+  const imageUrl=getBadgeImage(deptId,rankName);
+
+  if(imageUrl){
+    // Show preview card
+    document.getElementById('badgePreviewCard').style.display='block';
+    document.getElementById('badgeNoneCard').style.display='none';
+
+    const img=document.getElementById('badgeImg');
+    const placeholder=document.getElementById('badgeImgPlaceholder');
+    img.src=imageUrl;
+    img.style.display='block';
+    placeholder.style.display='none';
+
+    // Set download link
+    const dlBtn=document.getElementById('badgeDownloadBtn');
+    dlBtn.href=imageUrl;
+    dlBtn.download=(member.name||'badge').replace(/\s+/g,'_')+'_badge.png';
+    dlBtn.style.display='block';
+
+    // Member info strip
+    const statusColors={active:'var(--green)',loa:'var(--blue)',needs:'var(--amber)',inactive:'var(--text3)'};
+    document.getElementById('badgeInfoStrip').innerHTML=`
+      <div style="background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:var(--radius-s);padding:.75rem 1rem;display:grid;grid-template-columns:1fr 1fr;gap:.5rem .75rem;font-size:12px;">
+        <div><span style="color:var(--text3);">Name</span><br><strong>${member.name}</strong></div>
+        <div><span style="color:var(--text3);">Badge #</span><br><strong style="font-family:var(--mono);">${member.badge||'—'}</strong></div>
+        <div><span style="color:var(--text3);">Rank</span><br><strong style="color:var(--gold);">${rankName||'—'}</strong></div>
+        <div><span style="color:var(--text3);">Department</span><br><strong style="color:${dept?.color||'var(--text)'};">${dept?.abbr||'—'}</strong></div>
+        <div><span style="color:var(--text3);">Status</span><br><strong style="color:${statusColors[member.status]||'var(--text2)'};">${(member.status||'active').toUpperCase()}</strong></div>
+        <div><span style="color:var(--text3);">Discord</span><br><strong>${member.discord||'—'}</strong></div>
+      </div>`;
+  } else {
+    // No image configured for this rank
+    document.getElementById('badgePreviewCard').style.display='none';
+    document.getElementById('badgeNoneCard').style.display='block';
+  }
 }
 
 function submitBadgeRequest(){
@@ -4572,6 +4789,496 @@ function removeSubRoster(id){
   `;
   document.head.appendChild(s);
 })();
+
+/* ════════════════════════════════════════════════════
+   DEPARTMENT ROSTER BOARD — Full Implementation
+   - Reads ranks + slot counts from S.ranks (Supabase)
+   - Reads member data from S.members (Supabase)
+   - Click empty slot → member picker → assign
+   - LOA button → updates S.members + Supabase + Sheet
+   - Move button → rank picker → moves member
+   - Remove button → clears slot
+   - Every write → Apps Script write-back to Google Sheet
+════════════════════════════════════════════════════ */
+
+/* ── Per-dept Apps Script URL + tab storage ── */
+const DR_SCRIPT_KEY = 'fudt_dr_scripts'; // { deptId: { url, tab } }
+function loadDrScripts(){ try{ return JSON.parse(localStorage.getItem(DR_SCRIPT_KEY)||'{}'); }catch(e){ return {}; } }
+function saveDrScripts(s){ localStorage.setItem(DR_SCRIPT_KEY,JSON.stringify(s)); }
+
+function getDrScript(deptId){ const all=loadDrScripts(); return all[deptId]||{url:'',tab:'Roster'}; }
+function setDrScript(deptId,url,tab){ const all=loadDrScripts(); all[deptId]={url:url||'',tab:tab||'Roster'}; saveDrScripts(all); }
+
+/* ── Populate dept dropdown on the Dept Roster page ── */
+function populateDrDeptSel(){
+  const sel=document.getElementById('drDeptSel'); if(!sel) return;
+  const cur=sel.value;
+  sel.innerHTML='<option value="">— Select Department —</option>'+
+    S.depts.map(d=>`<option value="${d.id}">${d.name}</option>`).join('');
+  if(cur) sel.value=cur;
+}
+
+/* ── Main page render function called when dept changes ── */
+function renderDeptRosterPage(){
+  const deptId=document.getElementById('drDeptSel')?.value;
+  const board=document.getElementById('drRosterBoard');
+  const builderSection=document.getElementById('drBuilderSection');
+  const scriptSection=document.getElementById('drScriptSection');
+  const syncBtn=document.getElementById('drSyncBtn');
+  const gsStatus=document.getElementById('drGsStatus');
+
+  if(!deptId){
+    board.innerHTML=`<div class="empty-state" style="border:1px solid var(--border);border-radius:var(--radius);">
+      <div class="empty-state-icon">🗂️</div>Select a department above to view its visual roster board</div>`;
+    if(builderSection) builderSection.style.display='none';
+    if(scriptSection) scriptSection.style.display='none';
+    if(syncBtn) syncBtn.style.display='none';
+    if(gsStatus) gsStatus.style.display='none';
+    return;
+  }
+
+  const canEdit = CU?.role==='admin'||(CU?.role==='hc'&&CU?.deptId===deptId);
+  if(builderSection) builderSection.style.display=canEdit?'block':'none';
+  if(scriptSection) scriptSection.style.display=canEdit?'block':'none';
+
+  // Load script URL into inputs
+  if(canEdit){
+    const sc=getDrScript(deptId);
+    const urlEl=document.getElementById('drScriptUrl');
+    const tabEl=document.getElementById('drSheetTab');
+    if(urlEl) urlEl.value=sc.url||'';
+    if(tabEl) tabEl.value=sc.tab||'Roster';
+    updateDrScriptStatus(deptId);
+  }
+
+  // Sync button
+  const sc=getDrScript(deptId);
+  if(syncBtn){ syncBtn.style.display=sc.url?'flex':'none'; }
+  if(gsStatus){ gsStatus.style.display=sc.url?'inline-flex':'none'; gsStatus.textContent='IDLE'; gsStatus.className='gs-write-badge gs-idle'; }
+
+  // Build roster stats for builder section
+  renderDrBuilderStats(deptId);
+
+  // Render the actual visual board
+  renderRosterBoard(deptId);
+}
+
+function updateDrScriptStatus(deptId){
+  const sc=getDrScript(deptId);
+  const statusEl=document.getElementById('drScriptStatus');
+  if(!statusEl) return;
+  if(!sc.url){ statusEl.textContent='NOT SET'; statusEl.className='gs-write-badge gs-idle'; }
+  else { statusEl.textContent='SET'; statusEl.className='gs-write-badge gs-ok'; }
+}
+
+function saveDrScriptUrl(){
+  const deptId=document.getElementById('drDeptSel')?.value; if(!deptId) return;
+  const url=document.getElementById('drScriptUrl')?.value?.trim()||'';
+  const tab=document.getElementById('drSheetTab')?.value?.trim()||'Roster';
+  setDrScript(deptId,url,tab);
+  updateDrScriptStatus(deptId);
+  const syncBtn=document.getElementById('drSyncBtn');
+  const gsStatus=document.getElementById('drGsStatus');
+  if(syncBtn) syncBtn.style.display=url?'flex':'none';
+  if(gsStatus){ gsStatus.style.display=url?'inline-flex':'none'; }
+}
+
+async function testDrScriptUrl(){
+  const deptId=document.getElementById('drDeptSel')?.value;
+  const url=document.getElementById('drScriptUrl')?.value?.trim();
+  const statusEl=document.getElementById('drScriptStatus');
+  if(!url){ toast('Paste your Apps Script URL first','err',3000); return; }
+  statusEl.textContent='TESTING…'; statusEl.className='gs-write-badge gs-idle';
+  try{
+    const resp=await fetch(url,{method:'GET',mode:'no-cors'});
+    statusEl.textContent='✓ REACHABLE'; statusEl.className='gs-write-badge gs-ok';
+    if(deptId){ setDrScript(deptId,url,document.getElementById('drSheetTab')?.value||'Roster'); }
+    toast('Apps Script URL saved and reachable','ok',3000);
+  }catch(e){
+    statusEl.textContent='UNREACHABLE'; statusEl.className='gs-write-badge gs-err';
+    toast('Could not reach the URL — check it is deployed as "Anyone" access','err',5000);
+  }
+}
+
+function renderDrBuilderStats(deptId){
+  const el=document.getElementById('drBuilderStats'); if(!el) return;
+  const ranks=(S.ranks[deptId]||[]).sort((a,b)=>a.order-b.order);
+  if(!ranks.length){ el.innerHTML='<span style="font-size:12px;color:var(--text3);">No ranks configured. Go to Admin → Ranks first.</span>'; return; }
+  el.innerHTML=ranks.map(r=>{
+    const filled=S.members.filter(m=>m.dept===deptId&&m.rank===r.name).length;
+    const max=r.maxSlots||0;
+    const isFull=max>0&&filled>=max;
+    return `<div style="display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:6px;background:${isFull?'var(--red-d)':'rgba(255,255,255,.04)'};border:1px solid ${isFull?'rgba(255,77,109,.25)':'var(--border)'};font-size:11px;font-family:var(--mono);">
+      <span style="color:var(--gold);">${r.name}</span>
+      <span style="color:${isFull?'var(--red)':'var(--text3)'};">${filled}${max>0?'/'+max:''} ${max>0?(isFull?'FULL':'open'):''}</span>
+    </div>`;
+  }).join('');
+}
+
+/* ── Core visual roster board renderer ── */
+function renderRosterBoard(deptId){
+  const board=document.getElementById('drRosterBoard'); if(!board) return;
+  const dept=S.depts.find(d=>d.id===deptId);
+  const ranks=(S.ranks[deptId]||[]).sort((a,b)=>a.order-b.order);
+  const members=S.members.filter(m=>m.dept===deptId);
+  const canEdit=CU?.role==='admin'||(CU?.role==='hc'&&CU?.deptId===deptId);
+
+  if(!ranks.length){
+    board.innerHTML=`<div class="empty-state" style="border:1px solid var(--border);border-radius:var(--radius);">
+      <div class="empty-state-icon">🏅</div>
+      No ranks configured for ${dept?.name||'this department'}.<br>
+      <span style="font-size:12px;">Go to <strong>Admin → Ranks</strong> and add ranks with slot counts first.</span>
+    </div>`;
+    return;
+  }
+
+  const color=dept?.color||'var(--green)';
+
+  const rows=ranks.map(rank=>{
+    const max=rank.maxSlots||0;
+    const slotMembers=members.filter(m=>m.rank===rank.name);
+    const filled=slotMembers.length;
+    const isFull=max>0&&filled>=max;
+    const displayMax=max>0?max:Math.max(filled,1); // for visual purposes if unlimited show at least filled+1
+
+    // Build slot cards
+    let slots='';
+    // Filled slots
+    slotMembers.forEach((m,i)=>{
+      const isLoa=m.status==='loa';
+      const isNeeds=m.status==='needs';
+      const statusColor=isLoa?'var(--blue)':isNeeds?'var(--amber)':'var(--green)';
+      slots+=`<div class="roster-slot filled" data-member="${m.id}" data-rank="${rank.name}" data-dept="${deptId}">
+        <div class="slot-num">#${i+1}</div>
+        ${isLoa?'<div class="slot-status-loa">● LOA</div>':''}
+        ${isNeeds?`<div style="display:inline-flex;align-items:center;gap:4px;font-size:9px;font-family:var(--mono);font-weight:700;color:var(--amber);background:var(--amber-d);border-radius:4px;padding:2px 6px;letter-spacing:.5px;margin-bottom:4px;">● NEEDS IMPRV.</div>`:''}
+        <div class="slot-name" style="color:${statusColor};">${m.name}</div>
+        <div class="slot-badge">${m.badge||'—'}</div>
+        <div class="slot-discord">${m.discord?'@'+m.discord:'—'}</div>
+        ${canEdit?`<div class="slot-actions">
+          <button class="slot-btn ${isLoa?'slot-btn-move':'slot-btn-loa'}" onclick="toggleSlotLoa('${m.id}','${deptId}',event)">${isLoa?'↩ Return':'📝 LOA'}</button>
+          <button class="slot-btn slot-btn-move" onclick="openMoveRankPicker('${m.id}','${deptId}',event)">🔄 Move</button>
+          <button class="slot-btn slot-btn-remove" onclick="removeFromSlot('${m.id}','${deptId}',event)">✕</button>
+        </div>`:''}
+      </div>`;
+    });
+
+    // Empty slots (only show for ranks with fixed max)
+    if(max>0){
+      for(let i=filled;i<max;i++){
+        slots+=`<div class="roster-slot empty" onclick="${canEdit?`openSlotPicker('${rank.name}','${deptId}',${i+1})`:''}">
+          <div class="slot-num">#${i+1}</div>
+          <div class="slot-empty-label"><span>＋</span>${canEdit?'Click to assign':'Vacant'}</div>
+        </div>`;
+      }
+    } else if(canEdit){
+      // unlimited: show one extra empty slot to add
+      slots+=`<div class="roster-slot empty" onclick="openSlotPicker('${rank.name}','${deptId}',${filled+1})">
+        <div class="slot-empty-label"><span>＋</span>Add Member</div>
+      </div>`;
+    }
+
+    const tierColors={hc:'var(--red)',thc:'var(--amber)',lc:'var(--gold)',sup:'var(--purple)',patrol:'var(--green)',cadet:'var(--teal)'};
+    const rankColor=tierColors[rank.tier]||color;
+
+    return `<div class="roster-rank-row">
+      <div class="roster-rank-hdr" style="border-left-color:${rankColor};">
+        <div class="roster-rank-title" style="color:${rankColor};">${rank.name}</div>
+        <div style="font-size:9px;font-family:var(--mono);color:var(--text3);padding:2px 7px;background:rgba(255,255,255,.04);border-radius:4px;text-transform:uppercase;letter-spacing:1px;">${rank.tier||'patrol'}</div>
+        <div class="roster-rank-meta">
+          <span style="color:${isFull?'var(--red)':filled>0?'var(--green)':'var(--text3)'};">${filled}</span>
+          ${max>0?`<span style="color:var(--text3);">/ ${max}</span>`:''}
+          ${isFull?`<span style="font-size:9px;font-family:var(--mono);padding:2px 6px;background:var(--red-d);color:var(--red);border-radius:4px;">FULL</span>`:''}
+        </div>
+      </div>
+      <div class="roster-slots">${slots}</div>
+    </div>`;
+  }).join('');
+
+  // Unranked members (have no rank matching any rank in this dept)
+  const rankNames=ranks.map(r=>r.name);
+  const unranked=members.filter(m=>!rankNames.includes(m.rank));
+  let unrankedHtml='';
+  if(unranked.length){
+    unrankedHtml=`<div class="roster-rank-row" style="border-color:var(--amber-d);">
+      <div class="roster-rank-hdr" style="border-left-color:var(--amber);">
+        <div class="roster-rank-title" style="color:var(--amber);">⚠ UNRANKED / UNASSIGNED</div>
+        <div class="roster-rank-meta"><span style="color:var(--amber);">${unranked.length}</span></div>
+      </div>
+      <div class="roster-slots">${unranked.map(m=>`
+        <div class="roster-slot filled" style="border-color:var(--amber-d);">
+          <div class="slot-name">${m.name}</div>
+          <div class="slot-badge">${m.badge||'—'} · <span style="color:var(--amber);font-size:10px;">${m.rank||'No rank'}</span></div>
+          <div class="slot-discord">${m.discord?'@'+m.discord:'—'}</div>
+          ${canEdit?`<div class="slot-actions">
+            <button class="slot-btn slot-btn-move" onclick="openMoveRankPicker('${m.id}','${deptId}',event)">🔄 Assign Rank</button>
+            <button class="slot-btn slot-btn-remove" onclick="removeFromSlot('${m.id}','${deptId}',event)">✕</button>
+          </div>`:''}
+        </div>`).join('')}
+      </div>
+    </div>`;
+  }
+
+  board.innerHTML=`<div class="roster-board">${rows}${unrankedHtml}</div>`;
+}
+
+/* ── Slot Picker (assign empty slot) ── */
+let _spRank='', _spDept='', _spSlotNum=0;
+function openSlotPicker(rankName,deptId,slotNum){
+  _spRank=rankName; _spDept=deptId; _spSlotNum=slotNum;
+  const rank=getExactRank(deptId,rankName);
+  document.getElementById('spTitle').textContent='ASSIGN SLOT #'+slotNum;
+  document.getElementById('spSubtitle').textContent=rankName+(rank?.maxSlots>0?' · '+slotsFilled(deptId,rankName)+'/'+rank.maxSlots+' filled':'');
+  document.getElementById('spSearch').value='';
+  document.getElementById('slotPickerOverlay').style.display='flex';
+  renderPickerList();
+}
+function closeSlotPicker(){ document.getElementById('slotPickerOverlay').style.display='none'; }
+
+function renderPickerList(){
+  const q=(document.getElementById('spSearch')?.value||'').toLowerCase();
+  // Exclude members already in this dept at this rank
+  let members=S.members.filter(m=>m.dept===_spDept&&m.status!=='inactive');
+  // Already in this rank — exclude
+  members=members.filter(m=>m.rank!==_spRank);
+  if(q) members=members.filter(m=>[m.name,m.badge,m.discord,m.rank].join(' ').toLowerCase().includes(q));
+  const el=document.getElementById('spMemberList');
+  if(!members.length){ el.innerHTML='<div class="empty-state" style="padding:2rem;"><div class="empty-state-icon">👤</div>No eligible members found.</div>'; return; }
+  el.innerHTML=members.map(m=>{
+    const statusC={active:'var(--green)',loa:'var(--blue)',needs:'var(--amber)'};
+    return `<div class="picker-member-row" onclick="assignSlot('${m.id}')">
+      <div class="picker-avatar" style="background:${statusC[m.status]||'var(--green)'};">${m.name.charAt(0)}</div>
+      <div style="flex:1;">
+        <div class="picker-name">${m.name}</div>
+        <div class="picker-meta">${m.badge||'—'} · ${m.rank||'No rank'} · ${m.discord?'@'+m.discord:''}</div>
+      </div>
+      <span style="font-size:10px;font-family:var(--mono);color:${statusC[m.status]||'var(--text3)'};">${(m.status||'active').toUpperCase()}</span>
+    </div>`;
+  }).join('');
+}
+
+async function assignSlot(memberId){
+  const rankDef=getExactRank(_spDept,_spRank);
+  // Slot check
+  if(rankDef&&rankDef.maxSlots>0&&!hasOpenSlot(_spDept,_spRank,memberId)){
+    toast('⛔ '+_spRank+' is full ('+rankDef.maxSlots+'/'+rankDef.maxSlots+' slots).','err',5000);
+    closeSlotPicker(); return;
+  }
+  const m=S.members.find(x=>x.id===memberId); if(!m) return;
+  const oldRank=m.rank;
+  await dbUpdate('fudt_members',memberId,{rank:_spRank});
+  m.rank=_spRank;
+  closeSlotPicker();
+  toast('✅ '+m.name+' assigned to '+_spRank,'ok',3000);
+  await gsWriteSlot(_spDept,'UPDATE_SLOT',{rankName:_spRank,name:m.name,badge:m.badge||'',discord:m.discord||'',status:m.status||'Active',oldName:oldRank!==_spRank?'':m.name});
+  renderRosterBoard(_spDept);
+  renderDrBuilderStats(_spDept);
+}
+
+/* ── LOA Toggle ── */
+async function toggleSlotLoa(memberId,deptId,e){
+  if(e) e.stopPropagation();
+  const m=S.members.find(x=>x.id===memberId); if(!m) return;
+  const newStatus=m.status==='loa'?'active':'loa';
+  await dbUpdate('fudt_members',memberId,{status:newStatus});
+  m.status=newStatus;
+  toast((newStatus==='loa'?'📝 '+m.name+' set to LOA':'↩ '+m.name+' returned from LOA'),'ok',3000);
+  await gsWriteSlot(deptId,'SET_STATUS',{name:m.name,status:newStatus==='loa'?'LOA':'Active'});
+  renderRosterBoard(deptId);
+  renderSidebarStats();
+  triggerWebhook(memberId,'Status changed to '+newStatus,deptId);
+}
+
+/* ── Remove from slot ── */
+async function removeFromSlot(memberId,deptId,e){
+  if(e) e.stopPropagation();
+  const m=S.members.find(x=>x.id===memberId); if(!m) return;
+  if(!confirm('Remove '+m.name+' from the '+m.rank+' slot? This removes them from this rank (does NOT delete them from the database).')) return;
+  const oldRank=m.rank;
+  await dbUpdate('fudt_members',memberId,{rank:''});
+  m.rank='';
+  toast(m.name+' removed from '+oldRank,'ok',3000);
+  await gsWriteSlot(deptId,'CLEAR_SLOT',{rankName:oldRank,name:m.name});
+  renderRosterBoard(deptId);
+  renderDrBuilderStats(deptId);
+}
+
+/* ── Move to different rank picker ── */
+let _mpMemberId='', _mpDeptId='';
+function openMoveRankPicker(memberId,deptId,e){
+  if(e) e.stopPropagation();
+  _mpMemberId=memberId; _mpDeptId=deptId;
+  const m=S.members.find(x=>x.id===memberId); if(!m) return;
+  document.getElementById('mpMemberName').textContent=m.name;
+  document.getElementById('mpSubtitle').textContent='Current rank: '+(m.rank||'None');
+  renderMoveRankList();
+  document.getElementById('movePickerOverlay').style.display='flex';
+}
+function closeMoveRankPicker(){ document.getElementById('movePickerOverlay').style.display='none'; }
+
+function renderMoveRankList(){
+  const ranks=(S.ranks[_mpDeptId]||[]).sort((a,b)=>a.order-b.order);
+  const m=S.members.find(x=>x.id===_mpMemberId);
+  const el=document.getElementById('mpRankList');
+  if(!ranks.length){ el.innerHTML='<div class="empty-state">No ranks configured.</div>'; return; }
+  const tierColors={hc:'var(--red)',thc:'var(--amber)',lc:'var(--gold)',sup:'var(--purple)',patrol:'var(--green)',cadet:'var(--teal)'};
+  el.innerHTML=ranks.map(r=>{
+    const filled=slotsFilled(_mpDeptId,r.name,_mpMemberId);
+    const max=r.maxSlots||0;
+    const isFull=max>0&&filled>=max;
+    const isCurrent=m&&m.rank===r.name;
+    const color=tierColors[r.tier]||'var(--green)';
+    return `<div class="picker-member-row ${isFull||isCurrent?'':''}${isCurrent?'':''}" 
+      onclick="${isFull||isCurrent?'':(`confirmMoveToRank('${r.name}')`)} "
+      style="opacity:${isFull||isCurrent?.5:1};cursor:${isFull||isCurrent?'not-allowed':'pointer'};">
+      <div style="width:10px;height:10px;border-radius:50%;background:${color};flex-shrink:0;"></div>
+      <div style="flex:1;">
+        <div class="picker-name" style="color:${isCurrent?'var(--text2)':color};">${r.name} ${isCurrent?'← current':''}</div>
+        <div class="picker-meta">${r.tier} · ${filled}${max>0?'/'+max:''} filled ${isFull?'· FULL':''}</div>
+      </div>
+      ${isFull?`<span style="font-size:9px;font-family:var(--mono);color:var(--red);background:var(--red-d);padding:2px 7px;border-radius:4px;">FULL</span>`:''}
+    </div>`;
+  }).join('');
+}
+
+async function confirmMoveToRank(rankName){
+  const m=S.members.find(x=>x.id===_mpMemberId); if(!m) return;
+  const rankDef=getExactRank(_mpDeptId,rankName);
+  if(rankDef&&rankDef.maxSlots>0&&!hasOpenSlot(_mpDeptId,rankName,_mpMemberId)){
+    toast('⛔ '+rankName+' is full','err',4000); return;
+  }
+  const oldRank=m.rank;
+  await dbUpdate('fudt_members',_mpMemberId,{rank:rankName});
+  m.rank=rankName;
+  closeMoveRankPicker();
+  toast('✅ '+m.name+' moved to '+rankName,'ok',3000);
+  await gsWriteSlot(_mpDeptId,'UPDATE_SLOT',{rankName,name:m.name,badge:m.badge||'',discord:m.discord||'',status:m.status||'Active',oldName:m.name});
+  if(oldRank&&oldRank!==rankName){
+    await gsWriteSlot(_mpDeptId,'CLEAR_SLOT',{rankName:oldRank,name:m.name});
+  }
+  renderRosterBoard(_mpDeptId);
+  renderDrBuilderStats(_mpDeptId);
+  triggerWebhook(_mpMemberId,'Moved from '+oldRank+' to '+rankName,_mpDeptId);
+}
+
+/* ── Full sheet sync (all filled slots for current dept) ── */
+async function syncRosterToSheet(){
+  const deptId=document.getElementById('drDeptSel')?.value; if(!deptId) return;
+  const sc=getDrScript(deptId);
+  if(!sc.url){ toast('No Apps Script URL configured for this department','err',4000); return; }
+  const members=S.members.filter(m=>m.dept===deptId&&m.rank);
+  const gsStatus=document.getElementById('drGsStatus');
+  if(gsStatus){ gsStatus.textContent='SYNCING…'; gsStatus.className='gs-write-badge gs-idle'; }
+  let ok=0,fail=0;
+  for(const m of members){
+    const res=await gsWriteSlot(deptId,'UPDATE_SLOT',{rankName:m.rank,name:m.name,badge:m.badge||'',discord:m.discord||'',status:m.status==='loa'?'LOA':'Active',oldName:m.name},true);
+    if(res) ok++; else fail++;
+  }
+  if(gsStatus){ gsStatus.textContent=fail?`${ok} OK / ${fail} ERR`:`✓ SYNCED (${ok})`; gsStatus.className=fail?'gs-write-badge gs-err':'gs-write-badge gs-ok'; }
+  toast(`Sheet sync done — ${ok} rows written${fail?' ('+fail+' failed)':''}`,fail?'err':'ok',5000);
+}
+
+/* ── Apps Script write-back helper ── */
+async function gsWriteSlot(deptId, action, payload, silent=false){
+  const sc=getDrScript(deptId);
+  if(!sc.url) return false;
+  try{
+    await fetch(sc.url,{
+      method:'POST',
+      mode:'no-cors',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action,tab:sc.tab||'Roster',...payload})
+    });
+    if(!silent) gsLog('ok',`[DR] ${action} → ${payload.name||''} (${payload.rankName||''})`,deptId);
+    return true;
+  }catch(e){
+    if(!silent) gsLog('err',`[DR] ${action} FAILED: ${e.message}`,deptId);
+    return false;
+  }
+}
+
+/* ── Roster Builder Modal (configure slot counts) ── */
+function openRosterBuilderModal(){
+  const deptId=document.getElementById('drDeptSel')?.value; if(!deptId) return;
+  const dept=S.depts.find(d=>d.id===deptId);
+  const ranks=(S.ranks[deptId]||[]).sort((a,b)=>a.order-b.order);
+  if(!ranks.length){ toast('No ranks configured. Add ranks in Admin → Ranks first.','err',4000); return; }
+
+  // Build a simple inline modal using existing modal system
+  const existing=document.getElementById('rbModal');
+  if(existing) existing.remove();
+
+  const modal=document.createElement('div');
+  modal.id='rbModal';
+  modal.className='modal-overlay';
+  modal.style.display='flex';
+  modal.innerHTML=`
+    <div class="modal" style="max-width:520px;">
+      <div class="modal-header">
+        <div class="modal-title" style="color:var(--gold);">🏗️ CONFIGURE ROSTER SLOTS — ${dept?.name||''}</div>
+        <button class="modal-close" onclick="document.getElementById('rbModal').remove()">✕</button>
+      </div>
+      <div class="modal-body" style="padding:1.25rem;">
+        <div class="info-box" style="margin-bottom:1.25rem;">
+          Set the <strong>exact number of visible slots</strong> for each rank on the visual board.<br>
+          Changing this updates Supabase immediately. <strong>0 = unlimited.</strong>
+        </div>
+        ${ranks.map(r=>{
+          const filled=S.members.filter(m=>m.dept===deptId&&m.rank===r.name).length;
+          return `<div style="display:flex;align-items:center;gap:.75rem;padding:.625rem 0;border-bottom:1px solid var(--border);">
+            <div style="flex:1;">
+              <div style="font-weight:600;font-size:13px;">${r.name}</div>
+              <div style="font-size:11px;color:var(--text3);">${r.tier} · ${filled} currently filled</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:.5rem;">
+              <label style="font-size:11px;color:var(--text3);">Max Slots:</label>
+              <input type="number" min="0" value="${r.maxSlots||0}" id="rbSlot_${r.id}"
+                style="width:70px;background:rgba(255,255,255,.06);border:1px solid var(--border2);border-radius:6px;color:var(--text);padding:5px 8px;font-family:var(--mono);font-size:12px;outline:none;">
+            </div>
+          </div>`;
+        }).join('')}
+        <div style="margin-top:1.25rem;display:flex;gap:.75rem;">
+          <button class="btn btn-green" style="flex:1;" onclick="saveRosterSlots('${deptId}')">💾 Save Slot Counts</button>
+          <button class="btn btn-ghost" onclick="document.getElementById('rbModal').remove()">Cancel</button>
+        </div>
+        <div class="fmsg" id="rbMsg" style="margin-top:.75rem;"></div>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+}
+
+async function saveRosterSlots(deptId){
+  const ranks=(S.ranks[deptId]||[]);
+  const msg=document.getElementById('rbMsg');
+  let saved=0,errors=0;
+  for(const r of ranks){
+    const el=document.getElementById('rbSlot_'+r.id); if(!el) continue;
+    const newMax=parseInt(el.value)||0;
+    if(newMax===r.maxSlots) continue; // no change
+    // Check if reducing below current filled count
+    const filled=S.members.filter(m=>m.dept===deptId&&m.rank===r.name).length;
+    if(newMax>0&&newMax<filled){
+      if(msg){ showMsg(msg,'err',`Cannot set "${r.name}" to ${newMax} slots — ${filled} members already occupy it. Remove members first.`); }
+      errors++;
+      continue;
+    }
+    const{error}=await SB.from('fudt_ranks').update({max_slots:newMax}).eq('id',r.id);
+    if(!error){ r.maxSlots=newMax; saved++; }
+    else { errors++; }
+  }
+  if(errors){ if(msg) showMsg(msg,'err',`${errors} error(s). Check console.`); }
+  else if(saved>0){
+    if(msg) showMsg(msg,'ok',`${saved} rank(s) updated.`);
+    setTimeout(()=>document.getElementById('rbModal')?.remove(),1500);
+    renderRosterBoard(deptId);
+    renderDrBuilderStats(deptId);
+    toast('Slot counts saved','ok',3000);
+  } else {
+    if(msg) showMsg(msg,'info','No changes to save.');
+  }
+}
+
+/* ── deptroster logic is merged into gotoPage and populateAllFormDepts above ── */
 </script>
 </body>
 </html>
